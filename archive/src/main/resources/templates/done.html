@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+	<meta name="theme-color" content="#3b5bdb">
+	<title>보냈습니다</title>
+	<link rel="stylesheet" th:href="@{/css/base.css}">
+	<link rel="stylesheet" th:href="@{/css/senior.css}">
+</head>
+<body>
+
+<header class="app-bar">
+	<span class="service">사진 보내기</span>
+	<span class="who"><span th:text="${seniorName}">홍길동</span> 님</span>
+</header>
+
+<main class="page">
+	<div class="card">
+	<div class="done-mark" aria-hidden="true">✓</div>
+
+	<div class="done-text">
+		<span th:if="${sentTitle}" class="done-title" th:text="'『' + ${sentTitle} + '』'"></span>
+		<span th:if="${sentCount}" th:text="'사진 ' + ${sentCount} + '장을 보냈습니다.'">사진 3장을 보냈습니다.</span>
+		<span th:unless="${sentCount}">사진을 보냈습니다.</span><br>
+		<span th:text="${seniorName}">홍길동</span> 님, 수고하셨어요.
+	</div>
+
+	<a th:href="@{/upload}" class="btn">사진 더 보내기</a>
+
+	<form method="post" th:action="@{/logout}">
+		<button type="submit" class="btn btn-quiet">끝내기</button>
+	</form>
+	</div>
+</main>
+
+</body>
+</html>

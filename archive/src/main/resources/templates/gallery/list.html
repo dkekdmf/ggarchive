@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#3b5bdb">
+	<title>행사 사진 확인</title>
+	<link rel="stylesheet" th:href="@{/css/base.css}">
+	<link rel="stylesheet" th:href="@{/css/gallery.css}">
+</head>
+<body>
+
+<header class="app-bar">
+	<div class="inner">
+		<h1>행사 사진</h1>
+
+		<div class="counters">
+			<span class="counter">오늘 <b th:text="${todayCount}">0</b>건</span>
+			<span class="counter" th:classappend="${uncheckedCount > 0} ? 'alert'">
+				확인 안 한 것 <b th:text="${uncheckedCount}">0</b>건
+			</span>
+		</div>
+
+		<span class="spacer"></span>
+
+		<a th:href="@{/}" class="ghost-btn">사진 보내기</a>
+	</div>
+</header>
+
+<main>
+	<form class="filters" method="get" th:action="@{/gallery}">
+		<div>
+			<label for="name">행사 이름 또는 보낸 분</label>
+			<input type="text" id="name" name="name" th:value="${name}" placeholder="일부만 적어도 됩니다">
+		</div>
+		<div>
+			<label for="from">행사일 (시작)</label>
+			<input type="date" id="from" name="from" th:value="${from}">
+		</div>
+		<div>
+			<label for="to">행사일 (종료)</label>
+			<input type="date" id="to" name="to" th:value="${to}">
+		</div>
+		<label class="check">
+			<input type="checkbox" name="onlyUnchecked" value="true" th:checked="${onlyUnchecked}">
+			확인 안 한 것만
+		</label>
+		<button type="submit" class="submit">찾기</button>
+		<a class="reset" th:href="@{/gallery}">전체 보기</a>
+	</form>
+
+	<div class="empty" th:if="${events.isEmpty()}">
+		<span class="mark" aria-hidden="true">🗂</span>
+		조건에 맞는 행사 사진이 없습니다.
+	</div>
+
+	<div class="events" th:unless="${events.isEmpty()}">
+		<article class="event-card" th:each="event : ${events.content}"
+		         th:classappend="${event.checked} ? 'is-checked'">
+
+			<div class="event-head">
+				<div class="event-title">
+					<span th:text="${event.title}">경로당 생신잔치</span>
+					<span class="checked-badge" th:if="${event.checked}">확인함</span>
+				</div>
+				<div class="event-meta">
+					<span th:text="${#temporals.format(event.eventDate, 'yyyy년 M월 d일 (E)')}">2026년 8월 14일</span>
+					<span class="dot">·</span>
+					<span class="sender" th:text="${event.senior.displayName}">김순자(1234)</span>
+					<span class="dot">·</span>
+					<span class="photo-count" th:text="'사진 ' + ${event.photoCount} + '장'">사진 3장</span>
+				</div>
+			</div>
+
+			<p class="event-content" th:if="${event.hasContent()}" th:text="${event.content}">행사 내용</p>
+
+			<div class="event-photos">
+				<a th:each="photo : ${event.photos}" target="_blank"
+				   th:href="@{/gallery/photos/{id}/file(id=${photo.id})}">
+					<img class="thumb" loading="lazy"
+					     th:src="@{/gallery/photos/{id}/file(id=${photo.id})}"
+					     th:alt="${event.title} + ' 사진'">
+				</a>
+			</div>
+
+			<div class="event-foot">
+				<span class="received"
+				      th:text="'받은 때 ' + ${#temporals.format(event.createdAt, 'M월 d일 HH:mm')}">받은 때 8월 14일 14:20</span>
+				<span class="spacer"></span>
+				<form method="post" th:action="@{/gallery/events/{id}/check(id=${event.id})}">
+					<input type="hidden" name="redirectTo" th:value="${currentUrl}">
+					<button type="submit" class="check-btn" th:classappend="${event.checked} ? 'on'"
+					        th:text="${event.checked} ? '확인 취소' : '확인함'">확인함</button>
+				</form>
+			</div>
+		</article>
+	</div>
+
+	<div class="pager" th:if="${events.totalPages > 1}">
+		<a th:if="${!events.first}"
+		   th:href="@{/gallery(name=${name},from=${from},to=${to},onlyUnchecked=${onlyUnchecked},page=${events.number - 1})}">이전</a>
+		<span th:unless="${!events.first}" class="disabled">이전</span>
+
+		<span class="current" th:text="${events.number + 1} + ' / ' + ${events.totalPages}">1 / 3</span>
+
+		<a th:if="${!events.last}"
+		   th:href="@{/gallery(name=${name},from=${from},to=${to},onlyUnchecked=${onlyUnchecked},page=${events.number + 1})}">다음</a>
+		<span th:unless="${!events.last}" class="disabled">다음</span>
+	</div>
+</main>
+
+</body>
+</html>

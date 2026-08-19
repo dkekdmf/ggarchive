@@ -1,0 +1,441 @@
+/*
+ * 어르신 화면.
+ * 원칙: 한 화면에 할 일 하나, 글씨는 크게, 누를 곳은 손가락보다 크게, 색 대비는 충분히.
+ * 다만 딱딱한 관공서 서식처럼 보이지 않도록 모서리를 넉넉히 둥글리고 그림자를 얕게 깔았다.
+ */
+
+body {
+	background: var(--canvas);
+	font-size: 23px;
+	line-height: 1.65;
+	-webkit-tap-highlight-color: transparent;
+}
+
+/* ── 머리말 ───────────────────────────────── */
+
+.app-bar {
+	background: var(--brand-grad);
+	color: var(--white);
+	padding: 20px 22px 26px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	border-radius: 0 0 var(--r-xl) var(--r-xl);
+	box-shadow: var(--sh-brand);
+}
+
+.app-bar .service {
+	font-size: 21px;
+	font-weight: 800;
+	letter-spacing: -.03em;
+}
+
+.app-bar .who {
+	font-size: 18px;
+	font-weight: 700;
+	background: rgba(255, 255, 255, .22);
+	backdrop-filter: blur(4px);
+	padding: 7px 16px;
+	border-radius: var(--r-pill);
+	white-space: nowrap;
+}
+
+/* ── 본문 ─────────────────────────────────── */
+
+.page {
+	padding: 26px 18px 48px;
+	max-width: 560px;
+	margin: 0 auto;
+}
+
+/* 내용을 흰 카드에 담아 배경과 분리한다 */
+.card {
+	background: var(--white);
+	border-radius: var(--r-xl);
+	padding: 28px 22px;
+	box-shadow: var(--sh-md);
+}
+
+.card + .card { margin-top: 18px; }
+
+/* ── 진행 단계 ─────────────────────────────── */
+
+.steps {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 22px;
+}
+
+.steps .step {
+	flex: 1;
+	height: 8px;
+	border-radius: var(--r-pill);
+	background: var(--line);
+	transition: background .25s;
+}
+
+.steps .step.on { background: var(--brand-grad); }
+
+.steps .step-label {
+	flex: none;
+	font-size: 17px;
+	font-weight: 700;
+	color: var(--ink-500);
+	margin-right: 4px;
+}
+
+/* ── 글 ──────────────────────────────────── */
+
+h1 {
+	font-size: 32px;
+	font-weight: 800;
+	line-height: 1.35;
+	letter-spacing: -.035em;
+	margin: 0 0 10px;
+}
+
+p.guide {
+	font-size: 22px;
+	color: var(--ink-600);
+	margin: 0 0 28px;
+	line-height: 1.6;
+}
+
+.hint {
+	font-size: 19px;
+	color: var(--ink-500);
+	text-align: center;
+	line-height: 1.6;
+	margin: 20px 0 0;
+}
+
+.hint b { color: var(--brand-600); }
+
+/* ── 입력 ─────────────────────────────────── */
+
+.field { margin-bottom: 24px; }
+
+label {
+	display: block;
+	font-size: 22px;
+	font-weight: 700;
+	margin: 0 0 10px;
+	letter-spacing: -.02em;
+}
+
+.optional {
+	font-size: 18px;
+	font-weight: 600;
+	color: var(--ink-500);
+	margin-left: 8px;
+}
+
+input[type="text"],
+input[type="tel"],
+input[type="date"],
+input[type="password"],
+textarea {
+	width: 100%;
+	padding: 0 18px;
+	font-size: 26px;
+	color: var(--ink-900);
+	background: var(--canvas);
+	border: 2px solid transparent;
+	border-radius: var(--r-lg);
+	transition: border-color .18s, background .18s, box-shadow .18s;
+}
+
+input[type="text"],
+input[type="tel"],
+input[type="date"],
+input[type="password"] { height: 70px; }
+
+textarea {
+	padding: 16px 18px;
+	line-height: 1.55;
+	resize: vertical;
+}
+
+input::placeholder, textarea::placeholder { color: var(--ink-500); }
+
+input:focus, textarea:focus {
+	outline: none;
+	background: var(--white);
+	border-color: var(--brand-500);
+	box-shadow: 0 0 0 4px var(--brand-50);
+}
+
+/* ── 단추 ─────────────────────────────────── */
+
+.btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	width: 100%;
+	min-height: 80px;
+	padding: 16px 20px;
+	border: none;
+	border-radius: var(--r-lg);
+	font-size: 27px;
+	font-weight: 800;
+	letter-spacing: -.03em;
+	color: var(--white);
+	background: var(--brand-grad);
+	text-decoration: none;
+	cursor: pointer;
+	box-shadow: var(--sh-brand);
+	transition: transform .1s, box-shadow .2s, filter .2s;
+}
+
+.btn:active { transform: translateY(2px) scale(.99); filter: brightness(.94); }
+
+.btn + .btn { margin-top: 13px; }
+
+/* 사진 찍기 — 가장 중요한 동작이라 가득 채운 색으로 */
+.btn-camera {
+	flex-direction: column;
+	gap: 10px;
+	min-height: 168px;
+	font-size: 28px;
+}
+
+.btn-camera .icon {
+	width: 76px;
+	height: 76px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 40px;
+	line-height: 1;
+	background: rgba(255, 255, 255, .2);
+	border-radius: var(--r-lg);
+}
+
+/* 앨범에서 고르기 — 두 번째 선택지라 흰 카드로 두어 위계를 만든다 */
+.btn-album {
+	flex-direction: column;
+	gap: 10px;
+	min-height: 148px;
+	font-size: 26px;
+	background: var(--white);
+	color: var(--mint-800);
+	border: 2px solid var(--mint-100);
+	box-shadow: var(--sh-sm);
+}
+
+.btn-album .icon {
+	width: 66px;
+	height: 66px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 34px;
+	line-height: 1;
+	background: var(--mint-grad);
+	border-radius: var(--r-lg);
+	box-shadow: var(--sh-mint);
+}
+
+.btn-send {
+	background: var(--go-grad);
+	box-shadow: var(--sh-go);
+}
+
+/* 되돌아가는 단추는 색이 아니라 무게로 구분해, 색약이신 분도 헷갈리지 않게 한다 */
+.btn-retake {
+	background: var(--white);
+	color: var(--ink-700);
+	border: 2px solid var(--line);
+	box-shadow: none;
+	font-size: 23px;
+	min-height: 66px;
+	font-weight: 700;
+}
+
+.btn-retake:active { background: var(--line-soft); }
+
+.btn-quiet {
+	background: none;
+	color: var(--ink-500);
+	font-size: 19px;
+	font-weight: 600;
+	min-height: 58px;
+	text-decoration: underline;
+	box-shadow: none;
+	margin-top: 26px;
+}
+
+/* ── 알림 ─────────────────────────────────── */
+
+.error {
+	display: flex;
+	align-items: flex-start;
+	gap: 14px;
+	background: var(--bad-50);
+	border: 1px solid #fecdd6;
+	border-radius: var(--r-lg);
+	color: var(--bad-900);
+	font-size: 22px;
+	font-weight: 700;
+	line-height: 1.5;
+	padding: 18px 20px;
+	margin-bottom: 22px;
+	box-shadow: var(--sh-xs);
+}
+
+.error::before {
+	content: "!";
+	flex: none;
+	width: 34px;
+	height: 34px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--bad-600);
+	color: var(--white);
+	border-radius: 50%;
+	font-size: 22px;
+}
+
+/* ── 담은 사진 ─────────────────────────────── */
+
+#basket {
+	margin-top: 28px;
+	padding-top: 26px;
+	border-top: 2px dashed var(--line);
+}
+
+.count {
+	font-size: 25px;
+	font-weight: 800;
+	text-align: center;
+	color: var(--mint-800);
+	background: var(--mint-50);
+	border-radius: var(--r-pill);
+	padding: 12px;
+	margin: 0 0 18px;
+}
+
+.previews-grid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 12px;
+	margin-bottom: 22px;
+}
+
+.thumb-box { position: relative; }
+
+.thumb-box .preview-thumb {
+	display: block;
+	width: 100%;
+	aspect-ratio: 1 / 1;
+	object-fit: cover;
+	border-radius: var(--r-md);
+	background: var(--line-soft);
+	box-shadow: var(--sh-sm);
+}
+
+/* 잘못 담은 사진을 빼는 단추. 손가락으로 정확히 누를 수 있게 크게. */
+.thumb-remove {
+	position: absolute;
+	top: -9px;
+	right: -9px;
+	width: 44px;
+	height: 44px;
+	border-radius: 50%;
+	border: 3px solid var(--white);
+	background: var(--bad-600);
+	color: var(--white);
+	font-size: 19px;
+	font-weight: 800;
+	line-height: 1;
+	cursor: pointer;
+	box-shadow: var(--sh-md);
+}
+
+.summary {
+	font-size: 21px;
+	font-weight: 700;
+	color: var(--mint-800);
+	background: var(--mint-50);
+	border-radius: var(--r-lg);
+	text-align: center;
+	padding: 15px;
+	margin: 0 0 22px;
+}
+
+/* ── 보내는 중 ─────────────────────────────── */
+
+.sending {
+	text-align: center;
+	font-size: 25px;
+	font-weight: 800;
+	color: var(--brand-700);
+	line-height: 1.6;
+	padding: 70px 20px;
+}
+
+.sending .spinner {
+	width: 60px;
+	height: 60px;
+	margin: 0 auto 26px;
+	border: 6px solid var(--brand-100);
+	border-top-color: var(--brand-600);
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── 다 보냈습니다 ──────────────────────────── */
+
+.done-mark {
+	width: 122px;
+	height: 122px;
+	margin: 10px auto 26px;
+	border-radius: 50%;
+	background: var(--go-grad);
+	color: var(--white);
+	font-size: 62px;
+	font-weight: 800;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: var(--sh-go);
+	animation: pop .35s ease-out;
+}
+
+@keyframes pop {
+	from { transform: scale(.7); opacity: 0; }
+	to   { transform: scale(1); opacity: 1; }
+}
+
+.done-text {
+	text-align: center;
+	font-size: 28px;
+	font-weight: 800;
+	line-height: 1.55;
+	margin-bottom: 40px;
+}
+
+.done-title {
+	display: block;
+	font-size: 24px;
+	color: var(--mint-800);
+	background: var(--mint-50);
+	border-radius: var(--r-pill);
+	padding: 10px 18px;
+	margin: 0 auto 16px;
+	max-width: fit-content;
+}
+
+/* 머리말의 링크(사진 보기)도 이름표와 같은 모양으로 */
+a.who {
+	color: var(--white);
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+}

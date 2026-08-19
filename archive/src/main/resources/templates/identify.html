@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+	<meta name="theme-color" content="#3b5bdb">
+	<title>사진 보내기</title>
+	<link rel="stylesheet" th:href="@{/css/base.css}">
+	<link rel="stylesheet" th:href="@{/css/senior.css}">
+</head>
+<body>
+
+<header class="app-bar">
+	<span class="service">사진 보내기</span>
+	<a th:href="@{/gallery}" class="who">사진 보기</a>
+</header>
+
+<main class="page">
+	<div class="error" th:if="${error}" th:text="${error}">오류</div>
+
+	<div class="card">
+		<h1>안녕하세요.</h1>
+		<p class="guide">이름을 적어 주세요.</p>
+
+		<form method="post" th:action="@{/identify}" id="identifyForm">
+			<div class="field">
+				<label for="name">이름</label>
+				<input type="text" id="name" name="name" autocomplete="name"
+				       placeholder="예: 김순자" required>
+			</div>
+
+			<button type="submit" class="btn">시작하기</button>
+		</form>
+
+		<p class="hint">비밀번호는 없습니다.<br>한 번 적으시면 다음부터는 그냥 시작하실 수 있어요.</p>
+	</div>
+</main>
+
+<script>
+	// 한 번 적으신 이름은 이 휴대폰에 저장해 두었다가 다음부터 자동으로 채워 드린다.
+	(function () {
+		var nameInput = document.getElementById('name');
+
+		var savedName = localStorage.getItem('senior.name');
+		if (savedName) nameInput.value = savedName;
+
+		document.getElementById('identifyForm').addEventListener('submit', function () {
+			localStorage.setItem('senior.name', nameInput.value);
+		});
+	})();
+</script>
+
+</body>
+</html>
