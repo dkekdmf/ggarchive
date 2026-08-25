@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#3b5bdb">
+	<title>직원 로그인</title>
+	<link rel="stylesheet" th:href="@{/css/base.css}">
+	<link rel="stylesheet" th:href="@{/css/gallery.css}">
+</head>
+<body class="login-page">
+
+<div class="login-box">
+	<p class="brand">직원용</p>
+	<h1>고치기 · 지우기</h1>
+	<p class="login-guide">사진을 보는 것은 로그인 없이도 됩니다.<br>
+		행사를 고치거나 지우려면 비밀번호가 필요합니다.</p>
+
+	<div class="login-error" th:if="${error}" th:text="${error}">오류</div>
+
+	<form method="post" th:action="@{/admin/login}">
+		<label for="password">비밀번호</label>
+		<input type="password" id="password" name="password" autofocus required>
+		<button type="submit">들어가기</button>
+	</form>
+
+	<a th:href="@{/gallery}" class="login-back">사진 보기로 돌아가기</a>
+</div>
+
+</body>
+</html>

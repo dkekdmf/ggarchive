@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+	<meta name="theme-color" content="#3b5bdb">
+	<title>사진 보내기</title>
+	<link rel="stylesheet" th:href="@{/css/base.css}">
+	<link rel="stylesheet" th:href="@{/css/senior.css}">
+</head>
+<body>
+
+<header class="app-bar">
+	<span class="service">사진 보내기</span>
+	<span class="who"><span th:text="${seniorName}">홍길동</span> 님</span>
+</header>
+
+<main class="page">
+
+	<!-- 지금 어디까지 왔는지 보여 준다 -->
+	<div class="steps" id="stepBar">
+		<span class="step-label" id="stepLabel">1단계 / 2단계</span>
+		<span class="step on" id="stepMark1"></span>
+		<span class="step" id="stepMark2"></span>
+	</div>
+
+	<div class="error" th:if="${error}" th:text="${error}">오류</div>
+
+	<form method="post" th:action="@{/upload}" enctype="multipart/form-data" id="uploadForm">
+
+		<!-- ===== 1단계: 사진 고르기 ===== -->
+		<div id="step-photo" class="card">
+			<h1>사진을 골라 주세요</h1>
+
+			<!-- 고를 방법이 하나뿐이라, 화면을 크게 차지하는 하나의 영역으로 만든다 -->
+			<label for="album" class="picker" id="picker">
+				<span class="picker-art" aria-hidden="true">
+					<span class="frame f1"></span>
+					<span class="frame f2"></span>
+					<span class="frame f3">🖼️</span>
+				</span>
+				<span class="picker-title" id="pickerTitle">앨범에서 고르기</span>
+				<span class="picker-sub">여기를 누르면 사진첩이 열립니다</span>
+			</label>
+
+			<p class="hint">여러 장을 한 번에 고를 수 있어요.<br>
+				한 번에 <b th:text="${maxCount}">10</b>장까지 보낼 수 있습니다.</p>
+
+			<!-- 담은 사진 -->
+			<div id="basket" class="hidden">
+				<p class="count" id="countText">1장 담았어요</p>
+				<div id="previews" class="previews-grid"></div>
+				<button type="button" class="btn btn-send" id="toInfoBtn">다 골랐어요</button>
+				<button type="button" class="btn btn-retake" id="clearBtn">처음부터 다시</button>
+			</div>
+		</div>
+
+		<!-- 사진은 photos 에 쌓인다. album 은 고르는 창을 여는 용도로만 쓴다.
+		     multiple 이 있어야 파일 고르는 창에서 Shift/Ctrl 로 여러 장을 한 번에 고를 수 있다. -->
+		<input type="file" id="album" accept="image/*" multiple class="hidden">
+		<input type="file" id="photos" name="photos" multiple class="hidden">
+
+		<!-- ===== 2단계: 행사 정보 ===== -->
+		<div id="step-info" class="card hidden">
+			<h1>어떤 행사인가요?</h1>
+
+			<div class="field">
+				<label for="title">행사 이름</label>
+				<input type="text" id="title" name="title" maxlength="100"
+				       placeholder="">
+			</div>
+
+			<div class="field">
+				<label for="eventDate">행사한 날</label>
+				<input type="date" id="eventDate" name="eventDate"
+				       th:value="${today}" th:max="${today}">
+			</div>
+
+			<div class="field">
+				<label for="content">행사 내용<span class="optional"></span></label>
+				<textarea id="content" name="content" rows="4" maxlength="2000"
+				          placeholder=""></textarea>
+			</div>
+
+			<p class="summary" id="summaryText">사진 1장을 함께 보냅니다</p>
+
+			<button type="submit" class="btn btn-send" id="sendBtn">보내기</button>
+			<button type="button" class="btn btn-retake" id="backBtn">사진 다시 고르기</button>
+		</div>
+	</form>
+
+	<!-- ===== 3단계: 보내는 중 ===== -->
+	<div id="step-sending" class="sending hidden">
+		<div class="spinner" aria-hidden="true"></div>
+		보내는 중입니다...<br>잠깐만 기다려 주세요
+	</div>
+
+	<form method="post" th:action="@{/logout}" id="logoutForm">
+		<button type="submit" class="btn btn-quiet">다른 사람이 사용하기</button>
+	</form>
+</main>
+
+<script th:inline="javascript">
+(function () {
+	var MAX_COUNT = /*[[${maxCount}]]*/ 10;
+	var MAX_EDGE = 1600; // 긴 변 기준. 통신이 느려도 금방 올라가도록 미리 줄인다.
+
+	var album = document.getElementById('album');
+	var photos = document.getElementById('photos');
+	var picker = document.getElementById('picker');
+	var pickerTitle = document.getElementById('pickerTitle');
+	var form = document.getElementById('uploadForm');
+	var previews = document.getElementById('previews');
+	var countText = document.getElementById('countText');
+	var summaryText = document.getElementById('summaryText');
+	var basket = document.getElementById('basket');
+	var stepPhoto = document.getElementById('step-photo');
+	var stepInfo = document.getElementById('step-info');
+	var stepSending = document.getElementById('step-sending');
+	var logoutForm = document.getElementById('logoutForm');
+	var stepBar = document.getElementById('stepBar');
+	var stepLabel = document.getElementById('stepLabel');
+	var stepMark2 = document.getElementById('stepMark2');
+
+	// 담은 사진을 여기에 모아 두었다가 보낼 때 한꺼번에 올린다
+	var picked = [];
+
+	// 파일을 input 에 다시 담으려면 DataTransfer 가 필요하다.
+	// 아주 오래된 폰에서는 없을 수 있어, 그때는 한 장씩만 보내는 방식으로 물러선다.
+	var canStack = !!window.DataTransfer;
+
+	if (!canStack) {
+		document.querySelector('.hint').innerHTML =
+			'이 휴대폰에서는 한 번에 한 장씩 보낼 수 있어요.';
+	}
+
+	album.addEventListener('change', function () {
+		// Shift/Ctrl 로 여러 장을 한 번에 고를 수 있으므로 전부 받는다
+		var chosen = Array.prototype.slice.call(album.files || []);
+		if (!chosen.length) return;
+
+		var room = MAX_COUNT - picked.length;
+		if (room <= 0) {
+			alert('사진은 한 번에 ' + MAX_COUNT + '장까지 보낼 수 있어요.');
+			album.value = '';
+			return;
+		}
+		if (chosen.length > room) {
+			alert(chosen.length + '장을 고르셨는데, ' + room + '장만 더 담을 수 있어요.\n'
+				+ '앞에서부터 ' + room + '장만 담겠습니다.');
+			chosen = chosen.slice(0, room);
+		}
+
+		addAll(chosen, function () {
+			album.value = ''; // 같은 사진을 다시 고를 수 있도록 비운다
+			render();
+		});
+	});
+
+	/** 고른 사진들을 모두 줄여서 담는다. 고른 순서가 그대로 유지된다. */
+	function addAll(files, done) {
+		var results = new Array(files.length);
+		var remaining = files.length;
+
+		files.forEach(function (file, i) {
+			shrink(file, function (blob) {
+				results[i] = blob
+					? new File([blob], 'photo' + (i + 1) + '.jpg', { type: 'image/jpeg' })
+					: file;
+				if (--remaining === 0) {
+					results.forEach(function (f) { picked.push(f); });
+					done();
+				}
+			});
+		});
+	}
+
+	function render() {
+		countText.textContent = picked.length + '장 담았어요';
+		summaryText.textContent = '사진 ' + picked.length + '장을 함께 보냅니다';
+
+		previews.innerHTML = '';
+		picked.forEach(function (file, index) {
+			var box = document.createElement('div');
+			box.className = 'thumb-box';
+
+			var img = document.createElement('img');
+			img.className = 'preview-thumb';
+			img.alt = (index + 1) + '번째 사진';
+			img.src = URL.createObjectURL(file);
+
+			var remove = document.createElement('button');
+			remove.type = 'button';
+			remove.className = 'thumb-remove';
+			remove.setAttribute('aria-label', (index + 1) + '번째 사진 빼기');
+			remove.textContent = '✕';
+			remove.addEventListener('click', function () {
+				picked.splice(index, 1);
+				render();
+			});
+
+			box.appendChild(img);
+			box.appendChild(remove);
+			previews.appendChild(box);
+		});
+
+		// 사진을 담기 시작하면 고르는 영역을 줄여, 담은 사진이 화면을 차지하게 한다
+		var hasPhotos = picked.length > 0;
+		picker.classList.toggle('compact', hasPhotos);
+		pickerTitle.textContent = hasPhotos ? '사진 더 고르기' : '앨범에서 고르기';
+
+		basket.classList.toggle('hidden', !hasPhotos);
+		syncToInput();
+	}
+
+	/** 모아 둔 사진을 실제로 전송될 input 에 담는다. */
+	function syncToInput() {
+		if (!canStack) return;
+		try {
+			var dt = new DataTransfer();
+			picked.forEach(function (f) { dt.items.add(f); });
+			photos.files = dt.files;
+		} catch (e) {
+			canStack = false;
+		}
+	}
+
+	function showStep(n) {
+		stepLabel.textContent = n + '단계 / 2단계';
+		stepMark2.classList.toggle('on', n === 2);
+	}
+
+	document.getElementById('toInfoBtn').addEventListener('click', function () {
+		if (picked.length === 0) {
+			alert('사진을 먼저 골라 주세요.');
+			return;
+		}
+		stepPhoto.classList.add('hidden');
+		logoutForm.classList.add('hidden');
+		stepInfo.classList.remove('hidden');
+		showStep(2);
+		window.scrollTo(0, 0);
+		document.getElementById('title').focus();
+	});
+
+	document.getElementById('backBtn').addEventListener('click', function () {
+		stepInfo.classList.add('hidden');
+		stepPhoto.classList.remove('hidden');
+		logoutForm.classList.remove('hidden');
+		showStep(1);
+		window.scrollTo(0, 0);
+	});
+
+	document.getElementById('clearBtn').addEventListener('click', function () {
+		picked = [];
+		render();
+	});
+
+	form.addEventListener('submit', function (e) {
+		var title = document.getElementById('title').value.trim();
+		if (!title) {
+			e.preventDefault();
+			alert('행사 이름을 적어 주세요.');
+			document.getElementById('title').focus();
+			return;
+		}
+		if (picked.length === 0) {
+			e.preventDefault();
+			alert('사진을 골라 주세요.');
+			return;
+		}
+		// 두 번 눌러 같은 사진이 두 번 올라가는 일을 막는다
+		stepInfo.classList.add('hidden');
+		stepPhoto.classList.add('hidden');
+		logoutForm.classList.add('hidden');
+		stepBar.classList.add('hidden');
+		stepSending.classList.remove('hidden');
+	});
+
+	function shrink(file, done) {
+		if (!file.type.startsWith('image/') || !window.createImageBitmap) return done(null);
+		createImageBitmap(file).then(function (bitmap) {
+			var scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+			if (scale === 1) return done(null);
+			var canvas = document.createElement('canvas');
+			canvas.width = Math.round(bitmap.width * scale);
+			canvas.height = Math.round(bitmap.height * scale);
+			canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+			canvas.toBlob(done, 'image/jpeg', 0.85);
+		}).catch(function () { done(null); });
+	}
+})();
+</script>
+
+</body>
+</html>

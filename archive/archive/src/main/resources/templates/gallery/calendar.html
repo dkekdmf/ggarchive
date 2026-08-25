@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#3b5bdb">
+	<title>행사 달력</title>
+	<link rel="stylesheet" th:href="@{/css/base.css}">
+	<link rel="stylesheet" th:href="@{/css/gallery.css}">
+</head>
+<body>
+
+<header class="app-bar">
+	<div class="inner">
+		<h1>행사 사진</h1>
+		<span class="spacer"></span>
+		<a th:href="@{/}" class="ghost-btn">사진 보내기</a>
+
+		<span class="admin-chip" th:if="${isAdmin}">관리자</span>
+		<form th:if="${isAdmin}" method="post" th:action="@{/admin/logout}">
+			<button type="submit" class="ghost-btn">관리 끝내기</button>
+		</form>
+		<a th:unless="${isAdmin}" th:href="@{/admin/login}" class="ghost-btn">직원 로그인</a>
+	</div>
+</header>
+
+<main>
+	<div class="notice" th:if="${notice}" th:text="${notice}">알림</div>
+	<!-- 보기 방식 전환 -->
+	<nav class="view-tabs">
+		<a th:href="@{/gallery}">목록</a>
+		<a th:href="@{/gallery/calendar}" class="on">달력</a>
+	</nav>
+
+	<div class="cal-bar">
+		<a class="cal-nav" th:href="@{/gallery/calendar(year=${prev.year}, month=${prev.monthValue})}"
+		   aria-label="지난 달">←</a>
+
+		<h2 class="cal-title" th:text="${month.year} + '년 ' + ${month.monthValue} + '월'">2026년 8월</h2>
+
+		<a class="cal-nav" th:href="@{/gallery/calendar(year=${next.year}, month=${next.monthValue})}"
+		   aria-label="다음 달">→</a>
+
+		<a class="cal-today" th:href="@{/gallery/calendar}"
+		   th:unless="${month.equals(thisMonth)}">이번 달로</a>
+	</div>
+
+	<div class="calendar">
+		<div class="cal-head">
+			<span class="sun">일</span><span>월</span><span>화</span><span>수</span>
+			<span>목</span><span>금</span><span class="sat">토</span>
+		</div>
+
+		<div class="cal-week" th:each="week : ${weeks}">
+			<!-- th:with 는 th:if 보다 나중에 평가되므로, 변수는 반드시 바깥에서 선언한다 -->
+			<div class="cal-day" th:each="day, d : ${week}"
+			     th:with="list=${eventsByDay.get(day)}"
+			     th:classappend="(${day.monthValue != month.monthValue} ? ' other-month' : '')
+			                   + (${day.equals(today)} ? ' today' : '')
+			                   + (${day.dayOfWeek.value == 7} ? ' sun' : '')
+			                   + (${day.dayOfWeek.value == 6} ? ' sat' : '')">
+
+				<div class="day-num" th:text="${day.dayOfMonth}">1</div>
+
+				<div class="day-events" th:if="${list != null}">
+					<!-- 칸이 좁으므로 두 건까지만 보여 주고 나머지는 숫자로 접는다 -->
+					<a class="day-chip" th:each="event, i : ${list}" th:if="${i.index < 2}"
+					   th:classappend="${event.checked} ? 'is-checked'"
+					   th:href="@{/gallery/events/{id}(id=${event.id}, back='/gallery/calendar?year=' + ${month.year} + '&month=' + ${month.monthValue})}"
+					   th:title="${event.title}">
+						<img th:if="${event.photoCount > 0}" loading="lazy"
+						     th:src="@{/gallery/photos/{id}/file(id=${event.photos[0].id})}" alt="">
+						<span th:text="${event.title}">경로당 생신잔치</span>
+					</a>
+
+					<!-- 접힌 나머지. 누르면 그날 행사 전체가 아래로 펼쳐진다. -->
+					<button type="button" class="day-more" th:if="${list.size() > 2}"
+					        aria-haspopup="true" aria-expanded="false"
+					        th:text="'+' + (${list.size()} - 2) + '건'">+1건</button>
+				</div>
+
+				<div class="day-pop" th:if="${list != null and list.size() > 2}"
+				     th:classappend="${d.index >= 4} ? 'to-left'">
+					<div class="pop-head">
+						<b th:text="${#temporals.format(day, 'M월 d일 (E)')}">8월 19일 (수)</b>
+						<span th:text="${list.size()} + '건'">3건</span>
+						<button type="button" class="pop-close" aria-label="닫기">✕</button>
+					</div>
+					<a class="pop-item" th:each="event : ${list}"
+					   th:classappend="${event.checked} ? 'is-checked'"
+					   th:href="@{/gallery/events/{id}(id=${event.id}, back='/gallery/calendar?year=' + ${month.year} + '&month=' + ${month.monthValue})}">
+						<img th:if="${event.photoCount > 0}" loading="lazy"
+						     th:src="@{/gallery/photos/{id}/file(id=${event.photos[0].id})}" alt="">
+						<span class="pop-title" th:text="${event.title}">경로당 생신잔치</span>
+						<span class="pop-sub"
+						      th:text="${event.senior.displayName} + ' · 사진 ' + ${event.photoCount} + '장'">김순자 · 사진 3장</span>
+					</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</main>
+
+<script>
+(function () {
+	// "+N건" 을 누르면 그날 행사 전체가 아래로 펼쳐진다. 한 번에 하나만 열린다.
+	function closeAll() {
+		document.querySelectorAll('.cal-day.open').forEach(function (cell) {
+			cell.classList.remove('open');
+			var more = cell.querySelector('.day-more');
+			if (more) more.setAttribute('aria-expanded', 'false');
+		});
+	}
+
+	document.addEventListener('click', function (e) {
+		var more = e.target.closest('.day-more');
+
+		if (more) {
+			e.preventDefault();
+			var cell = more.closest('.cal-day');
+			var wasOpen = cell.classList.contains('open');
+			closeAll();
+			if (!wasOpen) {
+				cell.classList.add('open');
+				more.setAttribute('aria-expanded', 'true');
+			}
+			return;
+		}
+
+		// 펼쳐진 목록 안을 누른 것이 아니면 닫는다 (행사를 고른 경우는 그대로 이동)
+		if (!e.target.closest('.day-pop') || e.target.closest('.pop-close')) {
+			closeAll();
+		}
+	});
+
+	document.addEventListener('keydown', function (e) {
+		if (e.key === 'Escape') closeAll();
+	});
+})();
+</script>
+
+</body>
+</html>
