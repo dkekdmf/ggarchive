@@ -9,15 +9,23 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * 사진을 서버 디스크에 저장한다. archive.storage.type 이 없거나 local 이면 이것이 쓰인다.
+ */
 @Component
+@ConditionalOnProperty(name = "archive.storage.type", havingValue = "local", matchIfMissing = true)
 public class LocalPhotoStorage implements PhotoStorage {
 
+	private static final Logger log = LoggerFactory.getLogger(LocalPhotoStorage.class);
 	private static final DateTimeFormatter DATE_DIR = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
 	private final Path root;
@@ -56,6 +64,16 @@ public class LocalPhotoStorage implements PhotoStorage {
 			return resource;
 		} catch (IOException e) {
 			throw new IllegalArgumentException("사진 파일을 읽을 수 없습니다: " + storageKey, e);
+		}
+	}
+
+	@Override
+	public void delete(String storageKey) {
+		try {
+			Files.deleteIfExists(resolve(storageKey));
+		} catch (IOException e) {
+			// 파일이 남아도 화면에는 영향이 없다. 지워지지 않았다는 사실만 알리고 넘어간다.
+			log.warn("사진 파일을 지우지 못했습니다: {}", storageKey, e);
 		}
 	}
 

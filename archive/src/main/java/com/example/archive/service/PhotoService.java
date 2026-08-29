@@ -10,7 +10,11 @@ import com.example.archive.repository.SeniorRepository;
 import com.example.archive.storage.PhotoStorage;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
@@ -128,18 +132,126 @@ public class PhotoService {
 		return events;
 	}
 
+	/**
+	 * 달력에 그릴 한 달치 행사를 날짜별로 묶어 돌려준다.
+	 * 대표 사진을 쓰므로 트랜잭션이 살아 있는 여기에서 사진을 미리 읽어 둔다.
+	 */
+	public Map<LocalDate, List<Event>> eventsByDay(YearMonth month) {
+		List<Event> events = eventRepository.findBetween(month.atDay(1), month.atEndOfMonth());
+		events.forEach(event -> event.getPhotos().size());
+
+		Map<LocalDate, List<Event>> byDay = new HashMap<>();
+		for (Event event : events) {
+			byDay.computeIfAbsent(event.getEventDate(), day -> new ArrayList<>()).add(event);
+		}
+		return byDay;
+	}
+
 	public Event getEvent(Long id) {
 		return eventRepository.findWithPhotos(id)
 				.orElseThrow(() -> new IllegalArgumentException("행사를 찾을 수 없습니다: " + id));
 	}
 
 	public Photo getPhoto(Long id) {
-		return photoRepository.findById(id)
+		return photoRepository.findWithEvent(id)
 				.orElseThrow(() -> new IllegalArgumentException("사진을 찾을 수 없습니다: " + id));
 	}
 
 	public Resource loadFile(Photo photo) {
 		return photoStorage.load(photo.getStorageKey());
+	}
+
+	/** 직원이 행사 정보를 고친다. 사진과 보낸 분은 그대로 둔다. */
+	@Transactional
+	public Event updateEvent(Long eventId, String title, String content, LocalDate eventDate) {
+		if (title == null || title.isBlank()) {
+			throw new IllegalArgumentException("행사 제목을 적어 주세요.");
+		}
+		if (eventDate == null) {
+			throw new IllegalArgumentException("행사 날짜를 골라 주세요.");
+		}
+
+		Event event = eventRepository.findById(eventId)
+				.orElseThrow(() -> new IllegalArgumentException("행사를 찾을 수 없습니다: " + eventId));
+		event.update(title.trim(), content == null ? null : content.trim(), eventDate);
+		return event;
+	}
+
+	/**
+	 * 항목 하나만 고친다. 상세 화면에서 제목이면 제목, 날짜면 날짜만 바로 저장할 때 쓴다.
+	 *
+	 * @param field title | eventDate | content 중 하나
+	 */
+	@Transactional
+	public Event updateField(Long eventId, String field, String value) {
+		Event event = eventRepository.findById(eventId)
+				.orElseThrow(() -> new IllegalArgumentException("행사를 찾을 수 없습니다: " + eventId));
+
+		String trimmed = value == null ? "" : value.trim();
+
+		switch (field == null ? "" : field) {
+			case "title" -> {
+				if (trimmed.isBlank()) {
+					throw new IllegalArgumentException("행사 이름을 적어 주세요.");
+				}
+				if (trimmed.length() > 100) {
+					throw new IllegalArgumentException("행사 이름이 너무 깁니다. 100자까지 됩니다.");
+				}
+				event.update(trimmed, event.getContent(), event.getEventDate());
+			}
+			case "eventDate" -> {
+				LocalDate date = parseDate(trimmed);
+				if (date.isAfter(LocalDate.now())) {
+					throw new IllegalArgumentException("아직 오지 않은 날짜는 고를 수 없습니다.");
+				}
+				event.update(event.getTitle(), event.getContent(), date);
+			}
+			case "content" -> {
+				if (trimmed.length() > 2000) {
+					throw new IllegalArgumentException("행사 내용이 너무 깁니다. 2000자까지 됩니다.");
+				}
+				event.update(event.getTitle(), trimmed, event.getEventDate());
+			}
+			default -> throw new IllegalArgumentException("고칠 수 없는 항목입니다: " + field);
+		}
+		return event;
+	}
+
+	private LocalDate parseDate(String value) {
+		try {
+			return LocalDate.parse(value);
+		} catch (RuntimeException e) {
+			throw new IllegalArgumentException("행사 날짜를 골라 주세요.");
+		}
+	}
+
+	/** 행사를 사진까지 통째로 지운다. */
+	@Transactional
+	public String deleteEvent(Long eventId) {
+		Event event = eventRepository.findWithPhotos(eventId)
+				.orElseThrow(() -> new IllegalArgumentException("행사를 찾을 수 없습니다: " + eventId));
+
+		List<String> keys = event.getPhotos().stream().map(Photo::getStorageKey).toList();
+		String title = event.getTitle();
+
+		eventRepository.delete(event);
+		eventPublisher.publishEvent(new DeletedPhotoFilesEvent(keys));
+		return title;
+	}
+
+	/** 행사에서 사진 한 장만 뺀다. */
+	@Transactional
+	public Long deletePhoto(Long photoId) {
+		Photo photo = photoRepository.findById(photoId)
+				.orElseThrow(() -> new IllegalArgumentException("사진을 찾을 수 없습니다: " + photoId));
+
+		Event event = photo.getEvent();
+		String key = photo.getStorageKey();
+
+		event.removePhoto(photo);
+		photoRepository.delete(photo);
+		eventPublisher.publishEvent(new DeletedPhotoFilesEvent(List.of(key)));
+		return event.getId();
 	}
 
 	@Transactional

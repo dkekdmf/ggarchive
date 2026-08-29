@@ -194,50 +194,101 @@ input:focus, textarea:focus {
 
 .btn + .btn { margin-top: 13px; }
 
-/* 사진 찍기 — 가장 중요한 동작이라 가득 채운 색으로 */
-.btn-camera {
-	flex-direction: column;
-	gap: 10px;
-	min-height: 168px;
-	font-size: 28px;
-}
+/* ── 사진 고르기 영역 ───────────────────────── */
 
-.btn-camera .icon {
-	width: 76px;
-	height: 76px;
+.picker {
 	display: flex;
+	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	font-size: 40px;
-	line-height: 1;
-	background: rgba(255, 255, 255, .2);
-	border-radius: var(--r-lg);
+	gap: 6px;
+	padding: 34px 20px 30px;
+	border-radius: var(--r-xl);
+	background: linear-gradient(160deg, var(--brand-50) 0%, var(--mint-50) 100%);
+	border: 2px dashed var(--brand-300);
+	cursor: pointer;
+	text-align: center;
+	transition: border-color .2s, background .2s, transform .1s, padding .2s;
 }
 
-/* 앨범에서 고르기 — 두 번째 선택지라 흰 카드로 두어 위계를 만든다 */
-.btn-album {
-	flex-direction: column;
-	gap: 10px;
-	min-height: 148px;
-	font-size: 26px;
+.picker:active {
+	transform: scale(.99);
+	border-color: var(--brand-600);
+	background: var(--brand-100);
+}
+
+/* 사진 석 장이 겹쳐 있는 모양으로 "사진첩"임을 그림으로 알린다 */
+.picker-art {
+	position: relative;
+	width: 132px;
+	height: 104px;
+	margin-bottom: 14px;
+	transition: transform .2s;
+}
+
+.picker-art .frame {
+	position: absolute;
+	border-radius: var(--r-md);
 	background: var(--white);
-	color: var(--mint-800);
-	border: 2px solid var(--mint-100);
+	border: 2px solid var(--brand-100);
 	box-shadow: var(--sh-sm);
 }
 
-.btn-album .icon {
-	width: 66px;
-	height: 66px;
+.picker-art .f1 {
+	left: 0; top: 16px;
+	width: 72px; height: 62px;
+	transform: rotate(-9deg);
+}
+
+.picker-art .f2 {
+	right: 0; top: 12px;
+	width: 72px; height: 62px;
+	transform: rotate(9deg);
+}
+
+.picker-art .f3 {
+	left: 50%; top: 0;
+	margin-left: -44px;
+	width: 88px; height: 76px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	font-size: 34px;
+	font-size: 38px;
 	line-height: 1;
-	background: var(--mint-grad);
-	border-radius: var(--r-lg);
-	box-shadow: var(--sh-mint);
+	border-color: var(--brand-300);
+	box-shadow: var(--sh-md);
 }
+
+.picker-title {
+	font-size: 29px;
+	font-weight: 800;
+	letter-spacing: -.03em;
+	color: var(--brand-800);
+}
+
+.picker-sub {
+	font-size: 19px;
+	font-weight: 600;
+	color: var(--ink-600);
+}
+
+/* 사진을 담은 뒤에는 자리를 양보한다 */
+.picker.compact {
+	flex-direction: row;
+	gap: 14px;
+	padding: 18px 20px;
+}
+
+.picker.compact .picker-art {
+	width: 54px;
+	height: 44px;
+	margin-bottom: 0;
+	transform: scale(.42);
+	transform-origin: center;
+}
+
+.picker.compact .picker-title { font-size: 23px; }
+.picker.compact .picker-sub { display: none; }
 
 .btn-send {
 	background: var(--go-grad);

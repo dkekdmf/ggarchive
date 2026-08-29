@@ -13,4 +13,7 @@ public interface PhotoStorage {
 	String store(MultipartFile file);
 
 	Resource load(String storageKey);
+
+	/** 파일을 지운다. 이미 없으면 조용히 넘어간다. */
+	void delete(String storageKey);
 }

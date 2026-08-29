@@ -81,6 +81,17 @@ public class Event {
 		return new Event(senior, title, content, eventDate);
 	}
 
+	/** 직원이 제목·내용·날짜를 고친다. 보낸 분과 사진은 바뀌지 않는다. */
+	public void update(String title, String content, LocalDate eventDate) {
+		this.title = title;
+		this.content = (content == null || content.isBlank()) ? null : content;
+		this.eventDate = eventDate;
+	}
+
+	public void removePhoto(Photo photo) {
+		photos.remove(photo);
+	}
+
 	public void addPhoto(Photo photo) {
 		photos.add(photo);
 		photo.assignTo(this);

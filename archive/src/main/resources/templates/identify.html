@@ -22,30 +22,35 @@
 		<h1>안녕하세요.</h1>
 		<p class="guide">이름을 적어 주세요.</p>
 
-		<form method="post" th:action="@{/identify}" id="identifyForm">
+		<form method="post" th:action="@{/identify}" id="identifyForm" autocomplete="off">
 			<div class="field">
 				<label for="name">이름</label>
-				<input type="text" id="name" name="name" autocomplete="name"
-				       placeholder="예: 김순자" required>
+				<!-- 여럿이 함께 쓰는 기기라서 앞사람 이름이 남으면 안 된다.
+				     브라우저 자동완성을 끄고, 값도 저장하지 않는다. -->
+				<input type="text" id="name" name="name"
+				       autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
+				       value="" required>
 			</div>
 
 			<button type="submit" class="btn">시작하기</button>
 		</form>
 
-		<p class="hint">비밀번호는 없습니다.<br>한 번 적으시면 다음부터는 그냥 시작하실 수 있어요.</p>
+		<p class="hint">비밀번호는 없습니다.<br>이름만 적으시면 바로 시작됩니다.</p>
 	</div>
 </main>
 
 <script>
-	// 한 번 적으신 이름은 이 휴대폰에 저장해 두었다가 다음부터 자동으로 채워 드린다.
 	(function () {
-		var nameInput = document.getElementById('name');
+		// 예전 방식으로 이 기기에 저장돼 있던 이름을 지운다.
+		// 여럿이 함께 쓰는 기기에 앞사람 이름이 남아 있으면 안 된다.
+		try {
+			localStorage.removeItem('senior.name');
+			localStorage.removeItem('senior.phone4');
+		} catch (e) { /* 저장소를 못 쓰는 브라우저면 그냥 넘어간다 */ }
 
-		var savedName = localStorage.getItem('senior.name');
-		if (savedName) nameInput.value = savedName;
-
-		document.getElementById('identifyForm').addEventListener('submit', function () {
-			localStorage.setItem('senior.name', nameInput.value);
+		// 뒤로가기로 돌아왔을 때 브라우저가 값을 되살려 놓는 것도 막는다
+		window.addEventListener('pageshow', function () {
+			document.getElementById('name').value = '';
 		});
 	})();
 </script>

@@ -24,14 +24,27 @@
 		<span class="spacer"></span>
 
 		<a th:href="@{/}" class="ghost-btn">사진 보내기</a>
+
+		<span class="admin-chip" th:if="${isAdmin}">관리자</span>
+		<form th:if="${isAdmin}" method="post" th:action="@{/admin/logout}">
+			<button type="submit" class="ghost-btn">관리 끝내기</button>
+		</form>
+		<a th:unless="${isAdmin}" th:href="@{/admin/login}" class="ghost-btn">직원 로그인</a>
 	</div>
 </header>
 
 <main>
+	<div class="notice" th:if="${notice}" th:text="${notice}">알림</div>
+	<!-- 보기 방식 전환 -->
+	<nav class="view-tabs">
+		<a th:href="@{/gallery}" class="on">목록</a>
+		<a th:href="@{/gallery/calendar}">달력</a>
+	</nav>
+
 	<form class="filters" method="get" th:action="@{/gallery}">
 		<div>
 			<label for="name">행사 이름 또는 보낸 분</label>
-			<input type="text" id="name" name="name" th:value="${name}" placeholder="일부만 적어도 됩니다">
+			<input type="text" id="name" name="name" th:value="${name}" placeholder="">
 		</div>
 		<div>
 			<label for="from">행사일 (시작)</label>
@@ -54,46 +67,49 @@
 		조건에 맞는 행사 사진이 없습니다.
 	</div>
 
-	<div class="events" th:unless="${events.isEmpty()}">
-		<article class="event-card" th:each="event : ${events.content}"
-		         th:classappend="${event.checked} ? 'is-checked'">
+	<!-- 행사한 날별로 묶어서 보여 준다. 카드에는 대표 사진과 제목만, 자세한 것은 눌러서 본다. -->
+	<div th:unless="${events.isEmpty()}">
+		<section class="date-group" th:each="group : ${groups}">
 
-			<div class="event-head">
-				<div class="event-title">
-					<span th:text="${event.title}">경로당 생신잔치</span>
-					<span class="checked-badge" th:if="${event.checked}">확인함</span>
-				</div>
-				<div class="event-meta">
-					<span th:text="${#temporals.format(event.eventDate, 'yyyy년 M월 d일 (E)')}">2026년 8월 14일</span>
-					<span class="dot">·</span>
-					<span class="sender" th:text="${event.senior.displayName}">김순자(1234)</span>
-					<span class="dot">·</span>
-					<span class="photo-count" th:text="'사진 ' + ${event.photoCount} + '장'">사진 3장</span>
-				</div>
+			<div class="date-head">
+				<h2 th:text="${#temporals.format(group.key, 'yyyy년 M월 d일 (E)')}">2026년 8월 14일 (목)</h2>
+				<span class="today-badge" th:if="${group.key.equals(today)}">오늘</span>
+				<span class="date-count" th:text="${group.value.size()} + '건'">3건</span>
+				<span class="date-rule"></span>
 			</div>
 
-			<p class="event-content" th:if="${event.hasContent()}" th:text="${event.content}">행사 내용</p>
+			<div class="events">
+				<!-- 내려받기 단추를 넣어야 하므로 카드 전체를 링크로 감싸지 않는다 -->
+				<article class="event-card" th:each="event : ${group.value}"
+				         th:classappend="${event.checked} ? 'is-checked'">
 
-			<div class="event-photos">
-				<a th:each="photo : ${event.photos}" target="_blank"
-				   th:href="@{/gallery/photos/{id}/file(id=${photo.id})}">
-					<img class="thumb" loading="lazy"
-					     th:src="@{/gallery/photos/{id}/file(id=${photo.id})}"
-					     th:alt="${event.title} + ' 사진'">
-				</a>
-			</div>
+					<a class="card-link" th:href="@{/gallery/events/{id}(id=${event.id}, back=${currentUrl})}">
+						<div class="cover">
+							<img th:if="${event.photoCount > 0}" loading="lazy"
+							     th:src="@{/gallery/photos/{id}/file(id=${event.photos[0].id})}"
+							     th:alt="${event.title} + ' 대표 사진'">
+							<span class="cover-count" th:if="${event.photoCount > 1}"
+							      th:text="'+' + (${event.photoCount} - 1)">+2</span>
+							<span class="checked-badge" th:if="${event.checked}">확인함</span>
+						</div>
 
-			<div class="event-foot">
-				<span class="received"
-				      th:text="'받은 때 ' + ${#temporals.format(event.createdAt, 'M월 d일 HH:mm')}">받은 때 8월 14일 14:20</span>
-				<span class="spacer"></span>
-				<form method="post" th:action="@{/gallery/events/{id}/check(id=${event.id})}">
-					<input type="hidden" name="redirectTo" th:value="${currentUrl}">
-					<button type="submit" class="check-btn" th:classappend="${event.checked} ? 'on'"
-					        th:text="${event.checked} ? '확인 취소' : '확인함'">확인함</button>
-				</form>
+						<div class="event-body">
+							<div class="event-title" th:text="${event.title}">경로당 생신잔치</div>
+							<div class="event-meta">
+								<span class="sender" th:text="${event.senior.displayName}">김순자</span>
+								<span class="dot">·</span>
+								<span th:text="'사진 ' + ${event.photoCount} + '장'">사진 3장</span>
+							</div>
+						</div>
+					</a>
+
+					<div class="card-foot" th:if="${event.photoCount > 0}">
+						<a class="download-btn" th:href="@{/gallery/events/{id}/photos.zip(id=${event.id})}"
+						   th:text="'사진 ' + ${event.photoCount} + '장 내려받기'">사진 3장 내려받기</a>
+					</div>
+				</article>
 			</div>
-		</article>
+		</section>
 	</div>
 
 	<div class="pager" th:if="${events.totalPages > 1}">

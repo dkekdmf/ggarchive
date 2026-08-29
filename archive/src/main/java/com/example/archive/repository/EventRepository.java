@@ -3,6 +3,7 @@ package com.example.archive.repository;
 import com.example.archive.domain.Event;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,7 +24,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 			  and (:from is null or e.eventDate >= :from)
 			  and (:to is null or e.eventDate <= :to)
 			  and (:onlyUnchecked = false or e.checked = false)
-			order by e.createdAt desc
+			order by e.eventDate desc, e.createdAt desc
 			""",
 			countQuery = """
 					select count(e) from Event e
@@ -41,6 +42,15 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
 	@Query("select e from Event e join fetch e.senior left join fetch e.photos where e.id = :id")
 	Optional<Event> findWithPhotos(@Param("id") Long id);
+
+	/** 달력 화면용. 한 달치를 한 번에 읽는다. */
+	@Query("""
+			select e from Event e
+			join fetch e.senior
+			where e.eventDate between :from and :to
+			order by e.eventDate asc, e.createdAt asc
+			""")
+	List<Event> findBetween(@Param("from") LocalDate from, @Param("to") LocalDate to);
 
 	long countByCheckedFalse();
 
