@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#3b5bdb">
+	<title th:text="${event.title} + ' 고치기'">행사 고치기</title>
+	<link rel="stylesheet" th:href="@{/css/base.css}">
+	<link rel="stylesheet" th:href="@{/css/gallery.css}">
+</head>
+<body>
+
+<header class="app-bar">
+	<div class="inner">
+		<a th:href="@{/gallery/events/{id}(id=${event.id})}" class="ghost-btn">← 돌아가기</a>
+		<h1>행사 고치기</h1>
+		<span class="spacer"></span>
+		<span class="admin-chip">관리자</span>
+	</div>
+</header>
+
+<main class="detail">
+	<div class="login-error" th:if="${error}" th:text="${error}">오류</div>
+
+	<section class="detail-head">
+		<form method="post" th:action="@{/admin/events/{id}/edit(id=${event.id})}" class="edit-form">
+			<input type="hidden" name="back" th:value="${backUrl}">
+
+			<div class="edit-field">
+				<label for="title">행사 이름</label>
+				<input type="text" id="title" name="title" th:value="${event.title}"
+				       maxlength="100" required>
+			</div>
+
+			<div class="edit-field">
+				<label for="eventDate">행사한 날</label>
+				<input type="date" id="eventDate" name="eventDate"
+				       th:value="${event.eventDate}" required>
+			</div>
+
+			<div class="edit-field">
+				<label for="content">행사 내용</label>
+				<textarea id="content" name="content" rows="6" maxlength="2000"
+				          th:text="${event.content}"></textarea>
+			</div>
+
+			<p class="edit-note">
+				보낸 분(<b th:text="${event.senior.displayName}">김순자</b>)과 사진은 여기서 바뀌지 않습니다.
+			</p>
+
+			<div class="edit-actions">
+				<a th:href="@{/gallery/events/{id}(id=${event.id})}" class="btn-cancel">취소</a>
+				<button type="submit" class="btn-save">저장하기</button>
+			</div>
+		</form>
+	</section>
+
+	<section class="detail-photos">
+		<h3 th:text="'사진 ' + ${event.photoCount} + '장'">사진 3장</h3>
+		<p class="edit-note">지우고 싶은 사진의 ✕ 를 누르세요. 되돌릴 수 없습니다.</p>
+
+		<div class="photo-grid">
+			<figure th:each="photo, i : ${event.photos}">
+				<div class="editable-photo">
+					<a th:href="@{/gallery/photos/{id}/file(id=${photo.id})}" target="_blank">
+						<img loading="lazy"
+						     th:src="@{/gallery/photos/{id}/file(id=${photo.id})}"
+						     th:alt="(${i.index} + 1) + '번째 사진'">
+					</a>
+					<form method="post" th:action="@{/admin/photos/{id}/delete(id=${photo.id})}"
+					      onsubmit="return confirm('이 사진을 지웁니다. 되돌릴 수 없습니다. 계속할까요?');">
+						<button type="submit" class="photo-delete" aria-label="이 사진 지우기">✕</button>
+					</form>
+				</div>
+			</figure>
+		</div>
+	</section>
+
+	<section class="danger-zone">
+		<div>
+			<b>이 행사를 통째로 지우기</b>
+			<p>사진 <span th:text="${event.photoCount}">3</span>장이 함께 지워집니다. 되돌릴 수 없습니다.</p>
+		</div>
+		<!-- Thymeleaf 는 on* 속성에 문자열 변수를 넣지 못하게 막으므로 문구를 고정한다 -->
+		<form method="post" th:action="@{/admin/events/{id}/delete(id=${event.id})}"
+		      onsubmit="return confirm('이 행사를 사진까지 모두 지웁니다.\n되돌릴 수 없습니다. 계속할까요?');">
+			<input type="hidden" name="back" th:value="${backUrl}">
+			<button type="submit" class="btn-danger">행사 지우기</button>
+		</form>
+	</section>
+</main>
+
+</body>
+</html>

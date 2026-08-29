@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#3b5bdb">
+	<title th:text="${event.title} + ' - 행사 사진'">행사 사진</title>
+	<link rel="stylesheet" th:href="@{/css/base.css}">
+	<link rel="stylesheet" th:href="@{/css/gallery.css}">
+</head>
+<body>
+
+<header class="app-bar">
+	<div class="inner">
+		<a th:href="${backUrl}" class="ghost-btn">← 목록</a>
+		<h1 th:text="${event.title}">경로당 생신잔치</h1>
+		<span class="spacer"></span>
+		<a th:href="@{/}" class="ghost-btn">사진 보내기</a>
+		<span class="admin-chip" th:if="${isAdmin}">관리자</span>
+	</div>
+</header>
+
+<main class="detail">
+	<div class="notice" th:if="${notice}" th:text="${notice}">알림</div>
+
+	<section class="detail-head">
+		<h2 th:text="${event.title}">경로당 생신잔치</h2>
+
+		<div class="detail-meta">
+			<span class="meta-item">
+				<span class="meta-label">행사한 날</span>
+				<b th:text="${#temporals.format(event.eventDate, 'yyyy년 M월 d일 (E)')}">2026년 8월 14일</b>
+			</span>
+			<span class="meta-item">
+				<span class="meta-label">보낸 분</span>
+				<b th:text="${event.senior.displayName}">김순자</b>
+			</span>
+			<span class="meta-item">
+				<span class="meta-label">사진</span>
+				<b th:text="${event.photoCount} + '장'">3장</b>
+			</span>
+			<span class="meta-item">
+				<span class="meta-label">받은 때</span>
+				<b th:text="${#temporals.format(event.createdAt, 'M월 d일 HH:mm')}">8월 14일 14:20</b>
+			</span>
+		</div>
+
+		<div class="detail-actions">
+			<span class="checked-badge big" th:if="${event.checked}">확인함</span>
+			<span class="spacer"></span>
+
+			<!-- 고치기·지우기는 직원으로 로그인했을 때만 보인다 -->
+			<a th:if="${isAdmin}" class="edit-btn"
+			   th:href="@{/admin/events/{id}/edit(id=${event.id}, back=${backUrl})}">고치기</a>
+
+			<form method="post" th:action="@{/gallery/events/{id}/check(id=${event.id})}">
+				<input type="hidden" name="redirectTo" th:value="${backUrl}">
+				<button type="submit" class="check-btn" th:classappend="${event.checked} ? 'on'"
+				        th:text="${event.checked} ? '확인 취소' : '확인함'">확인함</button>
+			</form>
+		</div>
+	</section>
+
+	<section class="detail-content" th:if="${event.hasContent()}">
+		<h3>행사 내용</h3>
+		<p th:text="${event.content}">행사 내용</p>
+	</section>
+
+	<section class="detail-photos">
+		<div class="photos-head">
+			<h3 th:text="'사진 ' + ${event.photoCount} + '장'">사진 3장</h3>
+			<a class="download-btn" th:if="${event.photoCount > 0}"
+			   th:href="@{/gallery/events/{id}/photos.zip(id=${event.id})}">전체 내려받기</a>
+		</div>
+		<div class="photo-grid">
+			<figure th:each="photo, i : ${event.photos}">
+				<a th:href="@{/gallery/photos/{id}/file(id=${photo.id})}" target="_blank">
+					<img loading="lazy"
+					     th:src="@{/gallery/photos/{id}/file(id=${photo.id})}"
+					     th:alt="${event.title} + ' ' + (${i.index} + 1) + '번째 사진'">
+				</a>
+				<figcaption>
+					<a th:href="@{/gallery/photos/{id}/file(id=${photo.id}, download=true)}">내려받기</a>
+				</figcaption>
+			</figure>
+		</div>
+	</section>
+
+	<a th:href="${backUrl}" class="back-link">← 목록으로 돌아가기</a>
+</main>
+
+</body>
+</html>
