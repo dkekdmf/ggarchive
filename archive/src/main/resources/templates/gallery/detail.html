@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#3b5bdb">
+	<title th:text="${event.title} + ' - 행사 사진'">행사 사진</title>
+	<link rel="stylesheet" th:href="@{/css/base.css}">
+	<link rel="stylesheet" th:href="@{/css/gallery.css}">
+</head>
+<body>
+
+<header class="app-bar">
+	<div class="inner">
+		<a th:href="${backUrl}" class="ghost-btn">← 목록</a>
+		<h1 th:text="${event.title}">경로당 생신잔치</h1>
+		<span class="spacer"></span>
+		<a th:href="@{/}" class="ghost-btn">사진 보내기</a>
+		<span class="admin-chip" th:if="${isAdmin}">관리자</span>
+	</div>
+</header>
+
+<main class="detail">
+	<div class="notice" th:if="${notice}" th:text="${notice}">알림</div>
+	<div class="login-error" th:if="${error}" th:text="${error}">오류</div>
+
+	<section class="detail-head">
+		<!-- 행사 이름 -->
+		<div class="editable" th:attrappend="data-field=${isAdmin} ? 'title'">
+			<div class="editable-view">
+				<h2 th:text="${event.title}">경로당 생신잔치</h2>
+				<button type="button" class="tiny-edit" th:if="${isAdmin}">수정</button>
+			</div>
+
+			<form th:if="${isAdmin}" class="editable-form" method="post"
+			      th:action="@{/admin/events/{id}/field(id=${event.id})}">
+				<input type="hidden" name="field" value="title">
+				<input type="hidden" name="back" th:value="${backUrl}">
+				<input type="text" name="value" th:value="${event.title}" maxlength="100" required>
+				<button type="submit" class="tiny-save">저장</button>
+				<button type="button" class="tiny-cancel">취소</button>
+			</form>
+		</div>
+
+		<div class="detail-meta">
+			<!-- 행사한 날 -->
+			<span class="meta-item editable" th:attrappend="data-field=${isAdmin} ? 'eventDate'">
+				<span class="meta-label">행사한 날</span>
+
+				<span class="editable-view">
+					<b th:text="${#temporals.format(event.eventDate, 'yyyy년 M월 d일 (E)')}">2026년 8월 14일</b>
+					<button type="button" class="tiny-edit" th:if="${isAdmin}">수정</button>
+				</span>
+
+				<form th:if="${isAdmin}" class="editable-form" method="post"
+				      th:action="@{/admin/events/{id}/field(id=${event.id})}">
+					<input type="hidden" name="field" value="eventDate">
+					<input type="hidden" name="back" th:value="${backUrl}">
+					<input type="date" name="value" th:value="${event.eventDate}"
+					       th:max="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}" required>
+					<button type="submit" class="tiny-save">저장</button>
+					<button type="button" class="tiny-cancel">취소</button>
+				</form>
+			</span>
+			<span class="meta-item">
+				<span class="meta-label">보낸 분</span>
+				<b th:text="${event.senior.displayName}">김순자</b>
+			</span>
+			<span class="meta-item">
+				<span class="meta-label">사진</span>
+				<b th:text="${event.photoCount} + '장'">3장</b>
+			</span>
+			<span class="meta-item">
+				<span class="meta-label">받은 때</span>
+				<b th:text="${#temporals.format(event.createdAt, 'M월 d일 HH:mm')}">8월 14일 14:20</b>
+			</span>
+		</div>
+
+		<div class="detail-actions">
+			<span class="checked-badge big" th:if="${event.checked}">확인함</span>
+			<span class="spacer"></span>
+
+			<!-- 고치기·지우기는 직원으로 로그인했을 때만 보인다 -->
+			<a th:if="${isAdmin}" class="edit-btn"
+			   th:href="@{/admin/events/{id}/edit(id=${event.id}, back=${backUrl})}">고치기</a>
+
+			<form method="post" th:action="@{/gallery/events/{id}/check(id=${event.id})}">
+				<input type="hidden" name="redirectTo" th:value="${backUrl}">
+				<button type="submit" class="check-btn" th:classappend="${event.checked} ? 'on'"
+				        th:text="${event.checked} ? '확인 취소' : '확인함'">확인함</button>
+			</form>
+		</div>
+	</section>
+
+	<!-- 행사 내용. 관리자는 내용이 비어 있어도 이 칸이 보여야 새로 적을 수 있다. -->
+	<section class="detail-content editable"
+	         th:if="${event.hasContent() or isAdmin}"
+	         th:attrappend="data-field=${isAdmin} ? 'content'">
+
+		<div class="editable-view">
+			<div class="content-head">
+				<h3>행사 내용</h3>
+				<button type="button" class="tiny-edit" th:if="${isAdmin}"
+				        th:text="${event.hasContent()} ? '수정' : '적기'">수정</button>
+			</div>
+			<p th:if="${event.hasContent()}" th:text="${event.content}">행사 내용</p>
+			<p th:unless="${event.hasContent()}" class="content-empty">적힌 내용이 없습니다.</p>
+		</div>
+
+		<form th:if="${isAdmin}" class="editable-form" method="post"
+		      th:action="@{/admin/events/{id}/field(id=${event.id})}">
+			<input type="hidden" name="field" value="content">
+			<input type="hidden" name="back" th:value="${backUrl}">
+			<textarea name="value" rows="6" maxlength="2000" th:text="${event.content}"></textarea>
+			<div class="form-row">
+				<button type="submit" class="tiny-save">저장</button>
+				<button type="button" class="tiny-cancel">취소</button>
+			</div>
+		</form>
+	</section>
+
+	<section class="detail-photos">
+		<div class="photos-head">
+			<h3 th:text="'사진 ' + ${event.photoCount} + '장'">사진 3장</h3>
+			<a class="download-btn" th:if="${event.photoCount > 0}"
+			   th:href="@{/gallery/events/{id}/photos.zip(id=${event.id})}">전체 내려받기</a>
+		</div>
+		<div class="photo-grid">
+			<figure th:each="photo, i : ${event.photos}">
+				<a th:href="@{/gallery/photos/{id}/file(id=${photo.id})}" target="_blank">
+					<img loading="lazy"
+					     th:src="@{/gallery/photos/{id}/file(id=${photo.id})}"
+					     th:alt="${event.title} + ' ' + (${i.index} + 1) + '번째 사진'">
+				</a>
+				<figcaption>
+					<a th:href="@{/gallery/photos/{id}/file(id=${photo.id}, download=true)}">내려받기</a>
+				</figcaption>
+			</figure>
+		</div>
+	</section>
+
+	<a th:href="${backUrl}" class="back-link">← 목록으로 돌아가기</a>
+</main>
+
+<script>
+(function () {
+	// "수정" 을 누르면 그 항목만 입력칸으로 바뀐다. 한 번에 한 항목만 연다.
+	function closeAll() {
+		document.querySelectorAll('.editable.editing').forEach(function (box) {
+			box.classList.remove('editing');
+		});
+	}
+
+	document.addEventListener('click', function (e) {
+		if (e.target.closest('.tiny-edit')) {
+			var box = e.target.closest('.editable');
+			closeAll();
+			box.classList.add('editing');
+			var input = box.querySelector('input[name="value"], textarea[name="value"]');
+			if (input) { input.focus(); }
+			return;
+		}
+		if (e.target.closest('.tiny-cancel')) {
+			closeAll();
+		}
+	});
+
+	document.addEventListener('keydown', function (e) {
+		if (e.key === 'Escape') closeAll();
+	});
+})();
+</script>
+
+</body>
+</html>

@@ -3,6 +3,8 @@ package com.example.archive.web;
 import com.example.archive.service.PhotoService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -86,6 +88,36 @@ public class AdminController {
 		}
 		redirect.addFlashAttribute("notice", "행사 정보를 고쳤습니다.");
 		return "redirect:/gallery/events/" + id;
+	}
+
+	/** 상세 화면에서 항목 하나만 고쳐 저장한다. */
+	@PostMapping("/events/{id}/field")
+	public String editField(@PathVariable Long id,
+			@RequestParam String field,
+			@RequestParam(required = false) String value,
+			@RequestParam(required = false) String back,
+			RedirectAttributes redirect) {
+
+		try {
+			photoService.updateField(id, field, value);
+			redirect.addFlashAttribute("notice", "%s을(를) 고쳤습니다.".formatted(label(field)));
+		} catch (IllegalArgumentException e) {
+			redirect.addFlashAttribute("error", e.getMessage());
+		}
+		return "redirect:/gallery/events/" + id + "?back=" + encode(safeBack(back));
+	}
+
+	private String label(String field) {
+		return switch (field) {
+			case "title" -> "행사 이름";
+			case "eventDate" -> "행사한 날";
+			case "content" -> "행사 내용";
+			default -> field;
+		};
+	}
+
+	private String encode(String value) {
+		return URLEncoder.encode(value, StandardCharsets.UTF_8);
 	}
 
 	@PostMapping("/events/{id}/delete")
