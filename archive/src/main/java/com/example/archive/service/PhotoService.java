@@ -26,7 +26,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Transactional(readOnly = true)
-public class PhotoService {
+public class
+PhotoService {
 
 	private final EventRepository eventRepository;
 	private final PhotoRepository photoRepository;
