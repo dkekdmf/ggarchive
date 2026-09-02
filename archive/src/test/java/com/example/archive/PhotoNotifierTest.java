@@ -45,10 +45,8 @@ class PhotoNotifierTest {
 
 	@Test
 	void 행사가_들어오면_담당자에게_메일이_나간다() {
-		Long seniorId = photoService.identify("최복순").getId();
-
-		photoService.submit(seniorId, "경로당 생신잔치", "즐거웠습니다",
-				LocalDate.of(2026, 8, 14), List.of(jpeg("a.jpg")));
+		photoService.submit("경로당 생신잔치", "○○이벤트", "2층 강당", "생신 축하",
+				LocalDate.of(2026, 8, 14), null, "즐거웠습니다", List.of(jpeg("a.jpg")));
 
 		ArgumentCaptor<SimpleMailMessage> sent = ArgumentCaptor.forClass(SimpleMailMessage.class);
 		// 메일은 다른 스레드에서 나가므로 잠시 기다린다
@@ -57,20 +55,20 @@ class PhotoNotifierTest {
 
 		SimpleMailMessage message = sent.getValue();
 		assertThat(message.getTo()).containsExactly("staff@example.com");
-		assertThat(message.getSubject()).contains("경로당 생신잔치").contains("최복순");
+		// 이름은 받지 않으므로 보낸 곳은 업체명으로 알린다
+		assertThat(message.getSubject()).contains("경로당 생신잔치").contains("○○이벤트");
 		assertThat(message.getText())
 				.contains("경로당 생신잔치")
 				.contains("2026년 8월 14일")
-				.contains("최복순")
+				.contains("○○이벤트")
 				.contains("1장")
 				.contains("https://photo.example.go.kr/gallery");
 	}
 
 	@Test
 	void 사진을_여러_장_보내도_메일은_한_통만_나간다() {
-		Long seniorId = photoService.identify("한묶음").getId();
-
-		photoService.submit(seniorId, "가을 나들이", null, LocalDate.now(),
+		photoService.submit("가을 나들이", "○○이벤트", "앞마당", "나들이",
+				LocalDate.now(), null, null,
 				List.of(jpeg("1.jpg"), jpeg("2.jpg"), jpeg("3.jpg")));
 
 		ArgumentCaptor<SimpleMailMessage> sent = ArgumentCaptor.forClass(SimpleMailMessage.class);
@@ -86,10 +84,8 @@ class PhotoNotifierTest {
 		Mockito.doThrow(new MailSendException("서버 없음"))
 				.when(mailSender).send(any(SimpleMailMessage.class));
 
-		Long seniorId = photoService.identify("정말순").getId();
-
 		// 예외가 위로 튀어나오지 않아야 한다
-		assertThat(photoService.submit(seniorId, "메일 실패 시험", null, LocalDate.now(),
-				List.of(jpeg("b.jpg"))).getId()).isNotNull();
+		assertThat(photoService.submit("메일 실패 시험", "○○이벤트", "강당", "시험",
+				LocalDate.now(), null, null, List.of(jpeg("b.jpg"))).getId()).isNotNull();
 	}
 }

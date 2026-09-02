@@ -12,12 +12,11 @@
 
 <header class="app-bar">
 	<span class="service">사진 보내기</span>
-	<span class="who"><span th:text="${seniorName}">홍길동</span> 님</span>
+	<a th:href="@{/}" class="who">행사 보기</a>
 </header>
 
 <main class="page">
 
-	<!-- 지금 어디까지 왔는지 보여 준다 -->
 	<div class="steps" id="stepBar">
 		<span class="step-label" id="stepLabel">1단계 / 2단계</span>
 		<span class="step on" id="stepMark1"></span>
@@ -28,11 +27,60 @@
 
 	<form method="post" th:action="@{/upload}" enctype="multipart/form-data" id="uploadForm">
 
-		<!-- ===== 1단계: 사진 고르기 ===== -->
-		<div id="step-photo" class="card">
+		<!-- ===== 1단계: 행사 정보 ===== -->
+		<div id="step-info" class="card">
+			<h1>어떤 행사인가요?</h1>
+
+			<div class="field">
+				<label for="title">행사 이름</label>
+				<input type="text" id="title" name="title" maxlength="100"
+				       autocomplete="off" required>
+			</div>
+
+			<div class="field">
+				<label for="company">업체명</label>
+				<input type="text" id="company" name="company" maxlength="100"
+				       autocomplete="off" required>
+			</div>
+
+			<div class="field">
+				<label for="place">사용 장소</label>
+				<input type="text" id="place" name="place" maxlength="100"
+				       autocomplete="off" required>
+			</div>
+
+			<div class="field">
+				<label for="purpose">사용 목적</label>
+				<input type="text" id="purpose" name="purpose" maxlength="200"
+				       autocomplete="off" required>
+			</div>
+
+			<div class="field">
+				<label for="eventDate">사용 날짜<span class="optional">(예: 2026-09-01)</span></label>
+				<input type="text" id="eventDate" name="eventDate"
+				       inputmode="numeric" maxlength="10" autocomplete="off"
+				       th:value="${startDate}" required>
+			</div>
+
+			<div class="field">
+				<label for="content">행사 내용<span class="optional">(안 적으셔도 돼요)</span></label>
+				<textarea id="content" name="content" rows="4" maxlength="2000"></textarea>
+			</div>
+
+			<button type="button" class="btn" id="toPhotoBtn">사진 고르기</button>
+		</div>
+
+		<!-- 사진은 photos 에 쌓인다. album 은 고르는 창을 여는 용도로만 쓴다.
+		     multiple 이 있어야 파일 고르는 창에서 Shift/Ctrl 로 여러 장을 한 번에 고를 수 있다. -->
+		<input type="file" id="album" accept="image/*" multiple class="hidden">
+		<input type="file" id="photos" name="photos" multiple class="hidden">
+
+		<!-- ===== 2단계: 사진 고르기 ===== -->
+		<div id="step-photo" class="card hidden">
 			<h1>사진을 골라 주세요</h1>
 
-			<!-- 고를 방법이 하나뿐이라, 화면을 크게 차지하는 하나의 영역으로 만든다 -->
+			<p class="summary" id="infoSummary">행사 정보</p>
+
 			<label for="album" class="picker" id="picker">
 				<span class="picker-art" aria-hidden="true">
 					<span class="frame f1"></span>
@@ -42,62 +90,23 @@
 				<span class="picker-title" id="pickerTitle">앨범에서 고르기</span>
 				<span class="picker-sub">여기를 누르면 사진첩이 열립니다</span>
 			</label>
+			<p class="hint">최소 3장 이상 필수입니다.</p>
 
-			<p class="hint">여러 장을 한 번에 고를 수 있어요.<br>
-				한 번에 <b th:text="${maxCount}">10</b>장까지 보낼 수 있습니다.</p>
-
-			<!-- 담은 사진 -->
 			<div id="basket" class="hidden">
 				<p class="count" id="countText">1장 담았어요</p>
 				<div id="previews" class="previews-grid"></div>
-				<button type="button" class="btn btn-send" id="toInfoBtn">다 골랐어요</button>
-				<button type="button" class="btn btn-retake" id="clearBtn">처음부터 다시</button>
-			</div>
-		</div>
-
-		<!-- 사진은 photos 에 쌓인다. album 은 고르는 창을 여는 용도로만 쓴다.
-		     multiple 이 있어야 파일 고르는 창에서 Shift/Ctrl 로 여러 장을 한 번에 고를 수 있다. -->
-		<input type="file" id="album" accept="image/*" multiple class="hidden">
-		<input type="file" id="photos" name="photos" multiple class="hidden">
-
-		<!-- ===== 2단계: 행사 정보 ===== -->
-		<div id="step-info" class="card hidden">
-			<h1>어떤 행사인가요?</h1>
-
-			<div class="field">
-				<label for="title">행사 이름</label>
-				<input type="text" id="title" name="title" maxlength="100"
-				       placeholder="">
 			</div>
 
-			<div class="field">
-				<label for="eventDate">행사한 날</label>
-				<input type="date" id="eventDate" name="eventDate"
-				       th:value="${today}" th:max="${today}">
-			</div>
-
-			<div class="field">
-				<label for="content">행사 내용<span class="optional"></span></label>
-				<textarea id="content" name="content" rows="4" maxlength="2000"
-				          placeholder=""></textarea>
-			</div>
-
-			<p class="summary" id="summaryText">사진 1장을 함께 보냅니다</p>
-
-			<button type="submit" class="btn btn-send" id="sendBtn">보내기</button>
-			<button type="button" class="btn btn-retake" id="backBtn">사진 다시 고르기</button>
+			<button type="submit" class="btn btn-send" id="sendBtn">사진 없이 일정만 저장하기</button>
+			<button type="button" class="btn btn-retake" id="backBtn">행사 정보 다시 적기</button>
 		</div>
 	</form>
 
-	<!-- ===== 3단계: 보내는 중 ===== -->
+	<!-- ===== 보내는 중 ===== -->
 	<div id="step-sending" class="sending hidden">
 		<div class="spinner" aria-hidden="true"></div>
 		보내는 중입니다...<br>잠깐만 기다려 주세요
 	</div>
-
-	<form method="post" th:action="@{/logout}" id="logoutForm">
-		<button type="submit" class="btn btn-quiet">다른 사람이 사용하기</button>
-	</form>
 </main>
 
 <script th:inline="javascript">
@@ -112,21 +121,16 @@
 	var form = document.getElementById('uploadForm');
 	var previews = document.getElementById('previews');
 	var countText = document.getElementById('countText');
-	var summaryText = document.getElementById('summaryText');
 	var basket = document.getElementById('basket');
-	var stepPhoto = document.getElementById('step-photo');
 	var stepInfo = document.getElementById('step-info');
+	var stepPhoto = document.getElementById('step-photo');
 	var stepSending = document.getElementById('step-sending');
-	var logoutForm = document.getElementById('logoutForm');
 	var stepBar = document.getElementById('stepBar');
 	var stepLabel = document.getElementById('stepLabel');
 	var stepMark2 = document.getElementById('stepMark2');
+	var infoSummary = document.getElementById('infoSummary');
 
-	// 담은 사진을 여기에 모아 두었다가 보낼 때 한꺼번에 올린다
 	var picked = [];
-
-	// 파일을 input 에 다시 담으려면 DataTransfer 가 필요하다.
-	// 아주 오래된 폰에서는 없을 수 있어, 그때는 한 장씩만 보내는 방식으로 물러선다.
 	var canStack = !!window.DataTransfer;
 
 	if (!canStack) {
@@ -177,7 +181,6 @@
 
 	function render() {
 		countText.textContent = picked.length + '장 담았어요';
-		summaryText.textContent = '사진 ' + picked.length + '장을 함께 보냅니다';
 
 		previews.innerHTML = '';
 		picked.forEach(function (file, index) {
@@ -204,12 +207,14 @@
 			previews.appendChild(box);
 		});
 
-		// 사진을 담기 시작하면 고르는 영역을 줄여, 담은 사진이 화면을 차지하게 한다
 		var hasPhotos = picked.length > 0;
 		picker.classList.toggle('compact', hasPhotos);
 		pickerTitle.textContent = hasPhotos ? '사진 더 고르기' : '앨범에서 고르기';
-
 		basket.classList.toggle('hidden', !hasPhotos);
+
+		// 사진이 없어도 저장할 수 있다는 걸 단추 문구로 알린다
+		document.getElementById('sendBtn').textContent =
+			hasPhotos ? '보내기' : '사진 없이 일정만 저장하기';
 		syncToInput();
 	}
 
@@ -230,49 +235,51 @@
 		stepMark2.classList.toggle('on', n === 2);
 	}
 
-	document.getElementById('toInfoBtn').addEventListener('click', function () {
-		if (picked.length === 0) {
-			alert('사진을 먼저 골라 주세요.');
+	/** 1단계에서 빠뜨린 칸이 있으면 그 칸을 짚어 준다. */
+	function firstMissing() {
+		var required = [
+			['title', '행사 이름'],
+			['company', '업체명'],
+			['place', '사용 장소'],
+			['purpose', '사용 목적'],
+			['eventDate', '사용 날짜']
+		];
+		for (var i = 0; i < required.length; i++) {
+			var el = document.getElementById(required[i][0]);
+			if (!el.value.trim()) return { el: el, label: required[i][1] };
+		}
+		return null;
+	}
+
+	document.getElementById('toPhotoBtn').addEventListener('click', function () {
+		var missing = firstMissing();
+		if (missing) {
+			alert(missing.label + '을(를) 적어 주세요.');
+			missing.el.focus();
 			return;
 		}
-		stepPhoto.classList.add('hidden');
-		logoutForm.classList.add('hidden');
-		stepInfo.classList.remove('hidden');
+		infoSummary.textContent =
+			document.getElementById('title').value.trim() + ' · ' +
+			document.getElementById('place').value.trim();
+
+		stepInfo.classList.add('hidden');
+		stepPhoto.classList.remove('hidden');
 		showStep(2);
 		window.scrollTo(0, 0);
-		document.getElementById('title').focus();
 	});
 
 	document.getElementById('backBtn').addEventListener('click', function () {
-		stepInfo.classList.add('hidden');
-		stepPhoto.classList.remove('hidden');
-		logoutForm.classList.remove('hidden');
+		stepPhoto.classList.add('hidden');
+		stepInfo.classList.remove('hidden');
 		showStep(1);
 		window.scrollTo(0, 0);
 	});
 
-	document.getElementById('clearBtn').addEventListener('click', function () {
-		picked = [];
-		render();
-	});
-
-	form.addEventListener('submit', function (e) {
-		var title = document.getElementById('title').value.trim();
-		if (!title) {
-			e.preventDefault();
-			alert('행사 이름을 적어 주세요.');
-			document.getElementById('title').focus();
-			return;
-		}
-		if (picked.length === 0) {
-			e.preventDefault();
-			alert('사진을 골라 주세요.');
-			return;
-		}
+	form.addEventListener('submit', function () {
+		// 사진이 없어도 보낼 수 있다. 일정만 먼저 적어 두고 나중에 사진을 넣으면 된다.
 		// 두 번 눌러 같은 사진이 두 번 올라가는 일을 막는다
 		stepInfo.classList.add('hidden');
 		stepPhoto.classList.add('hidden');
-		logoutForm.classList.add('hidden');
 		stepBar.classList.add('hidden');
 		stepSending.classList.remove('hidden');
 	});

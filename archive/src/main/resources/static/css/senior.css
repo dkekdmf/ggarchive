@@ -104,11 +104,14 @@ p.guide {
 }
 
 .hint {
-	font-size: 19px;
-	color: var(--ink-500);
-	text-align: center;
-	line-height: 1.6;
-	margin: 20px 0 0;
+    display: grid;
+    place-items: center; /* 가로/세로 동시 중앙 정렬 */
+
+    height: 60px; /* 기준 높이 필요 */
+    font-size: 19px;
+    color: var(--ink-500);
+    line-height: 1.6;
+    margin: 20px 0 0;
 }
 
 .hint b { color: var(--brand-600); }
@@ -489,4 +492,16 @@ a.who {
 	text-decoration: none;
 	display: inline-flex;
 	align-items: center;
+}
+
+/* 사진 장수 권장 안내 */
+.recommend {
+	font-size: 20px;
+	font-weight: 700;
+	color: var(--mint-800);
+	background: var(--mint-50);
+	border-radius: var(--r-md);
+	text-align: center;
+	padding: 12px;
+	margin: 16px 0 0;
 }

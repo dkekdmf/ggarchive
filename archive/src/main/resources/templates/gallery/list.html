@@ -23,7 +23,7 @@
 
 		<span class="spacer"></span>
 
-		<a th:href="@{/}" class="ghost-btn">사진 보내기</a>
+		<a th:href="@{/upload}" class="ghost-btn">사진 보내기</a>
 
 		<span class="admin-chip" th:if="${isAdmin}">관리자</span>
 		<form th:if="${isAdmin}" method="post" th:action="@{/admin/logout}">
@@ -43,7 +43,7 @@
 
 	<form class="filters" method="get" th:action="@{/gallery}">
 		<div>
-			<label for="name">행사 이름 또는 보낸 분</label>
+			<label for="name">행사 이름 또는 업체명</label>
 			<input type="text" id="name" name="name" th:value="${name}" placeholder="">
 		</div>
 		<div>
@@ -88,6 +88,7 @@
 							<img th:if="${event.photoCount > 0}" loading="lazy"
 							     th:src="@{/gallery/photos/{id}/file(id=${event.photos[0].id})}"
 							     th:alt="${event.title} + ' 대표 사진'">
+							<span class="cover-empty" th:if="${event.photoCount == 0}">사진 없음</span>
 							<span class="cover-count" th:if="${event.photoCount > 1}"
 							      th:text="'+' + (${event.photoCount} - 1)">+2</span>
 							<span class="checked-badge" th:if="${event.checked}">확인함</span>
@@ -96,7 +97,9 @@
 						<div class="event-body">
 							<div class="event-title" th:text="${event.title}">경로당 생신잔치</div>
 							<div class="event-meta">
-								<span class="sender" th:text="${event.senior.displayName}">김순자</span>
+								<span class="sender" th:text="${event.companyOrDash}">○○이벤트</span>
+								<span class="dot">·</span>
+								<span th:text="${event.placeOrDash}">2층 강당</span>
 								<span class="dot">·</span>
 								<span th:text="'사진 ' + ${event.photoCount} + '장'">사진 3장</span>
 							</div>

@@ -12,7 +12,6 @@
 
 <header class="app-bar">
 	<span class="service">사진 보내기</span>
-	<span class="who"><span th:text="${seniorName}">홍길동</span> 님</span>
 </header>
 
 <main class="page">
@@ -22,15 +21,13 @@
 	<div class="done-text">
 		<span th:if="${sentTitle}" class="done-title" th:text="'『' + ${sentTitle} + '』'"></span>
 		<span th:if="${sentCount}" th:text="'사진 ' + ${sentCount} + '장을 보냈습니다.'">사진 3장을 보냈습니다.</span>
-		<span th:unless="${sentCount}">사진을 보냈습니다.</span><br>
-		<span th:text="${seniorName}">홍길동</span> 님, 수고하셨어요.
+		<span th:unless="${sentCount}">일정을 저장했습니다.</span><br>
+		수고하셨어요.
 	</div>
 
 	<a th:href="@{/upload}" class="btn">사진 더 보내기</a>
+	<a th:href="@{/}" class="btn btn-retake">행사 보기</a>
 
-	<form method="post" th:action="@{/logout}">
-		<button type="submit" class="btn btn-quiet">끝내기</button>
-	</form>
 	</div>
 </main>
 

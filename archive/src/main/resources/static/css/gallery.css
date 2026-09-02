@@ -293,11 +293,37 @@ main { max-width: 1360px; margin: 0 auto; padding: 24px 24px 64px; }
 .cal-day.other-month { background: #fbfcfd; }
 .cal-day.other-month .day-num { color: var(--ink-400); }
 
+.day-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 4px;
+}
+
 .day-num {
 	font-size: 13px;
 	font-weight: 700;
 	color: var(--ink-700);
 }
+
+/* 누를 수 있는 날에만 나타나는 조용한 힌트 */
+.day-add {
+	font-size: 13px;
+	font-weight: 700;
+	color: var(--brand-600);
+	opacity: 0;
+	transition: opacity .15s;
+}
+
+.cal-day.pickable { cursor: pointer; }
+.cal-day.pickable:hover { background: var(--brand-50); }
+.cal-day.pickable:hover .day-add { opacity: 1; }
+
+/* 오늘 칸은 이미 파란 배경이라 조금 더 진하게 */
+.cal-day.today.pickable:hover { background: var(--brand-100); }
+
+/* 아직 오지 않은 날. 누를 수는 있고, 지난 날과 구분만 해 둔다. */
+.cal-day.future .day-num { color: var(--ink-400); }
 
 .cal-day.sun .day-num { color: var(--bad-600); }
 .cal-day.sat .day-num { color: var(--brand-600); }
@@ -1220,3 +1246,59 @@ a.ghost-btn {
 .content-head h3 { margin: 0; }
 
 .content-empty { color: var(--ink-400); font-style: italic; }
+
+/* ── 사진 더 넣기 ─────────────────────────── */
+
+.photo-box { position: relative; }
+.photo-box a { display: block; border-radius: var(--r-md); overflow: hidden; }
+
+.add-photos {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+	margin-top: 18px;
+	padding-top: 18px;
+	border-top: 1px solid var(--line-soft);
+}
+
+/* 눈에 잘 띄어야 하는 단추라 채운 색으로 둔다 */
+.add-photos-pick {
+	padding: 13px 26px;
+	background: var(--brand-grad);
+	border: none;
+	color: var(--white);
+	border-radius: var(--r-sm);
+	font-size: 15px;
+	font-weight: 800;
+	cursor: pointer;
+	box-shadow: var(--sh-brand);
+	transition: filter .15s;
+}
+
+.add-photos-pick:hover { filter: brightness(1.06); }
+
+/* 사진이 없는 행사 안내 */
+.no-photos {
+	background: var(--warn-100);
+	color: var(--warn-800);
+	font-size: 14px;
+	font-weight: 700;
+	padding: 14px 16px;
+	border-radius: var(--r-md);
+	margin: 0 0 4px;
+}
+
+/* 목록 카드에서 대표 사진이 없을 때 */
+.cover-empty {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--ink-400);
+	font-size: 13px;
+	font-weight: 700;
+}
+
+.add-photos-info { font-size: 12.5px; color: var(--ink-500); }

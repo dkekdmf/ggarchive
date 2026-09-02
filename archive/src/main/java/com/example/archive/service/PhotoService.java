@@ -48,6 +48,15 @@ PhotoService {
 		this.maxPhotosPerUpload = maxPhotosPerUpload;
 	}
 
+	/**
+	 * 모든 행사가 매달리는 자리표.
+	 *
+	 * <p>이름은 더 이상 받지 않는다. 다만 event 테이블의 senior_id 는 NOT NULL 이고
+	 * 이미 행이 쌓여 있어서 컬럼을 없앨 수가 없다. 그래서 이 하나에 전부 붙여 둔다.
+	 * 화면 어디에도 나오지 않는다.
+	 */
+	static final String ANONYMOUS = "이름 없음";
+
 	public int getMaxPhotosPerUpload() {
 		return maxPhotosPerUpload;
 	}
@@ -69,25 +78,35 @@ PhotoService {
 	 * <p>알림 메일은 장수와 상관없이 행사당 한 통만 나간다.
 	 */
 	@Transactional
-	public Event submit(Long seniorId, String title, String content, LocalDate eventDate,
+	public Event submit(String title, String company, String place, String purpose,
+			LocalDate eventDate, LocalDate usageEnd, String content,
 			List<MultipartFile> files) {
 
 		if (title == null || title.isBlank()) {
-			throw new IllegalArgumentException("행사 제목을 적어 주세요.");
+			throw new IllegalArgumentException("행사 이름을 적어 주세요.");
+		}
+		if (company == null || company.isBlank()) {
+			throw new IllegalArgumentException("업체명을 적어 주세요.");
+		}
+		if (place == null || place.isBlank()) {
+			throw new IllegalArgumentException("사용 장소를 적어 주세요.");
+		}
+		if (purpose == null || purpose.isBlank()) {
+			throw new IllegalArgumentException("사용 목적을 적어 주세요.");
 		}
 		if (eventDate == null) {
-			throw new IllegalArgumentException("행사 날짜를 골라 주세요.");
+			throw new IllegalArgumentException("사용 시작일을 골라 주세요.");
 		}
-		if (eventDate.isAfter(LocalDate.now())) {
-			throw new IllegalArgumentException("아직 오지 않은 날짜는 고를 수 없습니다.");
+		if (usageEnd != null && usageEnd.isBefore(eventDate)) {
+			throw new IllegalArgumentException("사용 종료일이 시작일보다 앞설 수 없습니다.");
 		}
 
 		List<MultipartFile> actual = files == null ? List.of()
-				: files.stream().filter(f -> f != null && !f.isEmpty()).toList();
+				:
 
-		if (actual.isEmpty()) {
-			throw new IllegalArgumentException("사진이 없습니다. 사진을 골라 주세요.");
-		}
+                files.stream().filter(f -> f != null && !f.isEmpty()).toList();
+
+		// 사진이 없어도 저장한다. 일정만 먼저 적어 두고 나중에 사진을 넣는 경우가 있다.
 		if (actual.size() > maxPhotosPerUpload) {
 			throw new IllegalArgumentException(
 					"한 번에 %d장까지 보낼 수 있습니다.".formatted(maxPhotosPerUpload));
@@ -99,11 +118,11 @@ PhotoService {
 			}
 		}
 
-		Senior senior = seniorRepository.findById(seniorId)
-				.orElseThrow(() -> new IllegalArgumentException("등록되지 않은 사용자입니다."));
+		Senior senior = identify(ANONYMOUS);
 
-		Event event = Event.of(senior, title.trim(),
-				(content == null || content.isBlank()) ? null : content.trim(), eventDate);
+		Event event = Event.of(senior, title.trim(), company.trim(), place.trim(), purpose.trim(),
+				eventDate, usageEnd,
+				(content == null || content.isBlank()) ? null : content.trim());
 
 		for (MultipartFile file : actual) {
 			String storageKey = photoStorage.store(file);
@@ -116,7 +135,7 @@ PhotoService {
 		// 저장이 확정된 뒤에 담당 직원에게 메일이 나간다 (PhotoNotifier 참고).
 		// 사진 10장을 보내도 메일은 한 통이다.
 		eventPublisher.publishEvent(new PhotoUploadedEvent(
-				saved.getId(), senior.getName(),
+				saved.getId(), saved.getCompanyOrDash(),
 				saved.getTitle(), saved.getEventDate(), saved.getCreatedAt(), saved.getPhotoCount()));
 
 		return saved;
@@ -162,7 +181,7 @@ PhotoService {
 		return photoStorage.load(photo.getStorageKey());
 	}
 
-	/** 직원이 행사 정보를 고친다. 사진과 보낸 분은 그대로 둔다. */
+	/** 직원이 행사 정보를 고친다. 사진은 그대로 둔다. */
 	@Transactional
 	public Event updateEvent(Long eventId, String title, String content, LocalDate eventDate) {
 		if (title == null || title.isBlank()) {
@@ -201,11 +220,34 @@ PhotoService {
 				event.update(trimmed, event.getContent(), event.getEventDate());
 			}
 			case "eventDate" -> {
-				LocalDate date = parseDate(trimmed);
-				if (date.isAfter(LocalDate.now())) {
-					throw new IllegalArgumentException("아직 오지 않은 날짜는 고를 수 없습니다.");
+				// 앞으로 있을 행사도 적을 수 있으므로 날짜에 제한을 두지 않는다
+				event.update(event.getTitle(), event.getContent(), parseDate(trimmed));
+			}
+			case "company" -> {
+				if (trimmed.isBlank()) {
+					throw new IllegalArgumentException("업체명을 적어 주세요.");
 				}
-				event.update(event.getTitle(), event.getContent(), date);
+				event.updateCompany(trimmed);
+			}
+			case "place" -> {
+				if (trimmed.isBlank()) {
+					throw new IllegalArgumentException("사용 장소를 적어 주세요.");
+				}
+				event.updatePlace(trimmed);
+			}
+			case "purpose" -> {
+				if (trimmed.isBlank()) {
+					throw new IllegalArgumentException("사용 목적을 적어 주세요.");
+				}
+				event.updatePurpose(trimmed);
+			}
+			case "usageEnd" -> {
+				// 비우면 당일 행사로 되돌린다
+				LocalDate end = trimmed.isBlank() ? null : parseDate(trimmed);
+				if (end != null && end.isBefore(event.getEventDate())) {
+					throw new IllegalArgumentException("사용 종료일이 시작일보다 앞설 수 없습니다.");
+				}
+				event.updateUsageEnd(end);
 			}
 			case "content" -> {
 				if (trimmed.length() > 2000) {
@@ -224,6 +266,43 @@ PhotoService {
 		} catch (RuntimeException e) {
 			throw new IllegalArgumentException("행사 날짜를 골라 주세요.");
 		}
+	}
+
+	/**
+	 * 이미 올라온 행사에 사진을 더 넣는다.
+	 * 빠뜨린 사진을 나중에 채워 넣거나, 예정으로 먼저 적어 둔 행사에 사진을 붙일 때 쓴다.
+	 */
+	@Transactional
+	public Event addPhotos(Long eventId, List<MultipartFile> files) {
+		List<MultipartFile> actual = files == null ? List.of()
+				: files.stream().filter(f -> f != null && !f.isEmpty()).toList();
+
+		if (actual.isEmpty()) {
+			throw new IllegalArgumentException("사진을 골라 주세요.");
+		}
+		for (MultipartFile file : actual) {
+			String contentType = file.getContentType();
+			if (contentType == null || !contentType.startsWith("image/")) {
+				throw new IllegalArgumentException("사진 파일만 넣을 수 있습니다.");
+			}
+		}
+
+		Event event = eventRepository.findWithPhotos(eventId)
+				.orElseThrow(() -> new IllegalArgumentException("행사를 찾을 수 없습니다: " + eventId));
+
+		int room = maxPhotosPerUpload - event.getPhotoCount();
+		if (actual.size() > room) {
+			throw new IllegalArgumentException(
+					"한 행사에 사진은 %d장까지 넣을 수 있습니다. 지금 %d장이라 %d장까지 더 넣을 수 있어요."
+							.formatted(maxPhotosPerUpload, event.getPhotoCount(), Math.max(room, 0)));
+		}
+
+		for (MultipartFile file : actual) {
+			String storageKey = photoStorage.store(file);
+			String originalName = file.getOriginalFilename() == null ? "photo" : file.getOriginalFilename();
+			event.addPhoto(Photo.of(storageKey, originalName, file.getContentType(), file.getSize()));
+		}
+		return event;
 	}
 
 	/** 행사를 사진까지 통째로 지운다. */

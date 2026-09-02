@@ -37,7 +37,6 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
  * 올라온 행사 사진을 보는 화면. 비밀번호 없이 누구나 볼 수 있다.
  */
 @Controller
-@RequestMapping("/gallery")
 public class GalleryController {
 
 	private static final Logger log = LoggerFactory.getLogger(GalleryController.class);
@@ -48,7 +47,7 @@ public class GalleryController {
 		this.photoService = photoService;
 	}
 
-	@GetMapping
+	@GetMapping("/gallery")
 	public String list(@RequestParam(required = false) String name,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
@@ -104,7 +103,8 @@ public class GalleryController {
 	/**
 	 * 한 달을 달력으로 본다. 행사가 없던 날이 빈칸으로 드러나서 월 단위로 훑기 좋다.
 	 */
-	@GetMapping("/calendar")
+	// 첫 화면(/)도 달력이다. 어르신이 주소만 치고 들어와도 행사부터 보이게 한다.
+	@GetMapping({"/", "/gallery/calendar"})
 	public String calendar(@RequestParam(required = false) Integer year,
 			@RequestParam(required = false) Integer month,
 			Model model) {
@@ -148,7 +148,7 @@ public class GalleryController {
 	}
 
 	/** 행사 하나를 자세히 본다. 사진 전체와 내용이 모두 나온다. */
-	@GetMapping("/events/{id}")
+	@GetMapping("/gallery/events/{id}")
 	public String detail(@PathVariable Long id,
 			@RequestParam(required = false) String back,
 			Model model) {
@@ -162,7 +162,7 @@ public class GalleryController {
 	 * 한 행사의 사진을 통째로 압축해서 내려 준다.
 	 * 사진이 여러 장이라 한 장씩 받게 하면 실무에서 쓰기 어렵다.
 	 */
-	@GetMapping("/events/{id}/photos.zip")
+	@GetMapping("/gallery/events/{id}/photos.zip")
 	public ResponseEntity<StreamingResponseBody> downloadAll(@PathVariable Long id) {
 		Event event = photoService.getEvent(id);
 		if (event.getPhotoCount() == 0) {
@@ -207,7 +207,7 @@ public class GalleryController {
 	}
 
 	/** 사진 원본을 그대로 내려 준다. 목록의 img 도 이 주소를 쓴다. */
-	@GetMapping("/photos/{id}/file")
+	@GetMapping("/gallery/photos/{id}/file")
 	@ResponseBody
 	public ResponseEntity<Resource> file(@PathVariable Long id,
 			@RequestParam(defaultValue = "false") boolean download) {
@@ -220,7 +220,7 @@ public class GalleryController {
 
 		if (download) {
 			response.header(HttpHeaders.CONTENT_DISPOSITION, attachment(
-					safeName(photo.getSenior().getDisplayName() + "_" + photo.getId() + "_"
+					safeName(photo.getEvent().getCompanyOrDash() + "_" + photo.getId() + "_"
 							+ photo.getOriginalName())));
 		} else {
 			response.header(HttpHeaders.CACHE_CONTROL, "private, max-age=3600");
@@ -228,7 +228,7 @@ public class GalleryController {
 		return response.body(resource);
 	}
 
-	@PostMapping("/events/{id}/check")
+	@PostMapping("/gallery/events/{id}/check")
 	public String check(@PathVariable Long id, @RequestParam(required = false) String redirectTo) {
 		photoService.toggleChecked(id);
 		return "redirect:" + (redirectTo == null || !redirectTo.startsWith("/gallery") ? "/gallery" : redirectTo);

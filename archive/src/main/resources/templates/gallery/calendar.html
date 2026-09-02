@@ -14,7 +14,7 @@
 	<div class="inner">
 		<h1>행사 사진</h1>
 		<span class="spacer"></span>
-		<a th:href="@{/}" class="ghost-btn">사진 보내기</a>
+		<a th:href="@{/upload}" class="ghost-btn">사진 보내기</a>
 
 		<span class="admin-chip" th:if="${isAdmin}">관리자</span>
 		<form th:if="${isAdmin}" method="post" th:action="@{/admin/logout}">
@@ -55,12 +55,18 @@
 			<!-- th:with 는 th:if 보다 나중에 평가되므로, 변수는 반드시 바깥에서 선언한다 -->
 			<div class="cal-day" th:each="day, d : ${week}"
 			     th:with="list=${eventsByDay.get(day)}"
-			     th:classappend="(${day.monthValue != month.monthValue} ? ' other-month' : '')
+			     th:data-date="${day}"
+			     th:classappend="' pickable'
+			                   + (${day.isAfter(today)} ? ' future' : '')
+			                   + (${day.monthValue != month.monthValue} ? ' other-month' : '')
 			                   + (${day.equals(today)} ? ' today' : '')
 			                   + (${day.dayOfWeek.value == 7} ? ' sun' : '')
 			                   + (${day.dayOfWeek.value == 6} ? ' sat' : '')">
 
-				<div class="day-num" th:text="${day.dayOfMonth}">1</div>
+				<div class="day-head">
+					<span class="day-num" th:text="${day.dayOfMonth}">1</span>
+					<span class="day-add" aria-hidden="true">＋</span>
+				</div>
 
 				<div class="day-events" th:if="${list != null}">
 					<!-- 칸이 좁으므로 두 건까지만 보여 주고 나머지는 숫자로 접는다 -->
@@ -93,7 +99,7 @@
 						     th:src="@{/gallery/photos/{id}/file(id=${event.photos[0].id})}" alt="">
 						<span class="pop-title" th:text="${event.title}">경로당 생신잔치</span>
 						<span class="pop-sub"
-						      th:text="${event.senior.displayName} + ' · 사진 ' + ${event.photoCount} + '장'">김순자 · 사진 3장</span>
+						      th:text="${event.companyOrDash} + ' · 사진 ' + ${event.photoCount} + '장'">한빛건설 · 사진 3장</span>
 					</a>
 				</div>
 			</div>
@@ -135,6 +141,22 @@
 
 	document.addEventListener('keydown', function (e) {
 		if (e.key === 'Escape') closeAll();
+	});
+
+	// 날짜 칸의 빈 곳을 누르면 그 날짜로 행사 입력란을 연다.
+	// 행사 칩이나 "+N건" 을 누른 경우는 원래 동작을 그대로 둔다.
+	document.addEventListener('click', function (e) {
+		if (e.target.closest('.day-chip') || e.target.closest('.day-more')
+				|| e.target.closest('.day-pop')) {
+			return;
+		}
+		var cell = e.target.closest('.cal-day.pickable');
+		if (!cell) return;
+
+		var date = cell.getAttribute('data-date');
+		if (date) {
+			window.location.href = '/upload?date=' + encodeURIComponent(date);
+		}
 	});
 })();
 </script>

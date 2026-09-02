@@ -64,8 +64,8 @@ public class PhotoNotifier {
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void onPhotoUploaded(PhotoUploadedEvent event) {
 		if (!properties.canSend()) {
-			log.info("[알림 꺼짐] {} 님이 '{}' 행사 사진 {}장 보냄 (행사 번호 {})",
-					event.seniorName(), event.title(), event.photoCount(), event.eventId());
+			log.info("[알림 꺼짐] {} 이(가) '{}' 행사 사진 {}장 보냄 (행사 번호 {})",
+					event.company(), event.title(), event.photoCount(), event.eventId());
 			return;
 		}
 
@@ -79,8 +79,8 @@ public class PhotoNotifier {
 			SimpleMailMessage message = new SimpleMailMessage();
 			message.setFrom(properties.from());
 			message.setTo(properties.to().toArray(new String[0]));
-			message.setSubject("[사진 접수] %s - %s 님 (사진 %d장)"
-					.formatted(event.title(), event.seniorName(), event.photoCount()));
+			message.setSubject("[사진 접수] %s - %s (사진 %d장)"
+					.formatted(event.title(), event.company(), event.photoCount()));
 			message.setText(body(event));
 
 			sender.send(message);
@@ -94,10 +94,10 @@ public class PhotoNotifier {
 
 	private String body(PhotoUploadedEvent event) {
 		StringBuilder text = new StringBuilder()
-				.append("어르신이 행사 사진을 보내셨습니다.\n\n")
+				.append("행사 사진이 올라왔습니다.\n\n")
 				.append("행사 제목 : ").append(event.title()).append("\n")
 				.append("행사 날짜 : ").append(event.eventDate().format(EVENT_DAY)).append("\n")
-				.append("보낸 분   : ").append(event.seniorName()).append("\n")
+				.append("업체명    : ").append(event.company()).append("\n")
 				.append("사진 장수 : ").append(event.photoCount()).append("장\n")
 				.append("받은 때   : ").append(event.createdAt().format(WHEN)).append("\n");
 

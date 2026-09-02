@@ -15,7 +15,7 @@
 		<a th:href="${backUrl}" class="ghost-btn">← 목록</a>
 		<h1 th:text="${event.title}">경로당 생신잔치</h1>
 		<span class="spacer"></span>
-		<a th:href="@{/}" class="ghost-btn">사진 보내기</a>
+		<a th:href="@{/upload}" class="ghost-btn">사진 보내기</a>
 		<span class="admin-chip" th:if="${isAdmin}">관리자</span>
 	</div>
 </header>
@@ -45,7 +45,7 @@
 		<div class="detail-meta">
 			<!-- 행사한 날 -->
 			<span class="meta-item editable" th:attrappend="data-field=${isAdmin} ? 'eventDate'">
-				<span class="meta-label">행사한 날</span>
+				<span class="meta-label">사용 날짜</span>
 
 				<span class="editable-view">
 					<b th:text="${#temporals.format(event.eventDate, 'yyyy년 M월 d일 (E)')}">2026년 8월 14일</b>
@@ -56,16 +56,62 @@
 				      th:action="@{/admin/events/{id}/field(id=${event.id})}">
 					<input type="hidden" name="field" value="eventDate">
 					<input type="hidden" name="back" th:value="${backUrl}">
-					<input type="date" name="value" th:value="${event.eventDate}"
-					       th:max="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}" required>
+					<input type="date" name="value" th:value="${event.eventDate}" required>
 					<button type="submit" class="tiny-save">저장</button>
 					<button type="button" class="tiny-cancel">취소</button>
 				</form>
 			</span>
-			<span class="meta-item">
-				<span class="meta-label">보낸 분</span>
-				<b th:text="${event.senior.displayName}">김순자</b>
+			<!-- 업체명 -->
+			<span class="meta-item editable" th:attrappend="data-field=${isAdmin} ? 'company'">
+				<span class="meta-label">업체명</span>
+				<span class="editable-view">
+					<b th:text="${event.companyOrDash}">○○이벤트</b>
+					<button type="button" class="tiny-edit" th:if="${isAdmin}">수정</button>
+				</span>
+				<form th:if="${isAdmin}" class="editable-form" method="post"
+				      th:action="@{/admin/events/{id}/field(id=${event.id})}">
+					<input type="hidden" name="field" value="company">
+					<input type="hidden" name="back" th:value="${backUrl}">
+					<input type="text" name="value" th:value="${event.company}" maxlength="100" required>
+					<button type="submit" class="tiny-save">저장</button>
+					<button type="button" class="tiny-cancel">취소</button>
+				</form>
 			</span>
+
+			<!-- 사용 장소 -->
+			<span class="meta-item editable" th:attrappend="data-field=${isAdmin} ? 'place'">
+				<span class="meta-label">사용 장소</span>
+				<span class="editable-view">
+					<b th:text="${event.placeOrDash}">2층 강당</b>
+					<button type="button" class="tiny-edit" th:if="${isAdmin}">수정</button>
+				</span>
+				<form th:if="${isAdmin}" class="editable-form" method="post"
+				      th:action="@{/admin/events/{id}/field(id=${event.id})}">
+					<input type="hidden" name="field" value="place">
+					<input type="hidden" name="back" th:value="${backUrl}">
+					<input type="text" name="value" th:value="${event.place}" maxlength="100" required>
+					<button type="submit" class="tiny-save">저장</button>
+					<button type="button" class="tiny-cancel">취소</button>
+				</form>
+			</span>
+
+			<!-- 사용 목적 -->
+			<span class="meta-item editable" th:attrappend="data-field=${isAdmin} ? 'purpose'">
+				<span class="meta-label">사용 목적</span>
+				<span class="editable-view">
+					<b th:text="${event.purposeOrDash}">생신 축하 모임</b>
+					<button type="button" class="tiny-edit" th:if="${isAdmin}">수정</button>
+				</span>
+				<form th:if="${isAdmin}" class="editable-form" method="post"
+				      th:action="@{/admin/events/{id}/field(id=${event.id})}">
+					<input type="hidden" name="field" value="purpose">
+					<input type="hidden" name="back" th:value="${backUrl}">
+					<input type="text" name="value" th:value="${event.purpose}" maxlength="200" required>
+					<button type="submit" class="tiny-save">저장</button>
+					<button type="button" class="tiny-cancel">취소</button>
+				</form>
+			</span>
+
 			<span class="meta-item">
 				<span class="meta-label">사진</span>
 				<b th:text="${event.photoCount} + '장'">3장</b>
@@ -125,18 +171,44 @@
 			<a class="download-btn" th:if="${event.photoCount > 0}"
 			   th:href="@{/gallery/events/{id}/photos.zip(id=${event.id})}">전체 내려받기</a>
 		</div>
-		<div class="photo-grid">
+		<p class="no-photos" th:if="${event.photoCount == 0}">
+			아직 사진이 없습니다. 아래에서 넣어 주세요.
+		</p>
+
+		<div class="photo-grid" th:if="${event.photoCount > 0}">
 			<figure th:each="photo, i : ${event.photos}">
-				<a th:href="@{/gallery/photos/{id}/file(id=${photo.id})}" target="_blank">
-					<img loading="lazy"
-					     th:src="@{/gallery/photos/{id}/file(id=${photo.id})}"
-					     th:alt="${event.title} + ' ' + (${i.index} + 1) + '번째 사진'">
-				</a>
+				<div class="photo-box">
+					<a th:href="@{/gallery/photos/{id}/file(id=${photo.id})}" target="_blank">
+						<img loading="lazy"
+						     th:src="@{/gallery/photos/{id}/file(id=${photo.id})}"
+						     th:alt="${event.title} + ' ' + (${i.index} + 1) + '번째 사진'">
+					</a>
+					<!-- 사진 빼기는 직원으로 로그인했을 때만 -->
+					<form th:if="${isAdmin}" method="post"
+					      th:action="@{/admin/photos/{id}/delete(id=${photo.id})}"
+					      onsubmit="return confirm('이 사진을 지웁니다. 되돌릴 수 없습니다. 계속할까요?');">
+						<button type="submit" class="photo-delete" aria-label="이 사진 지우기">✕</button>
+					</form>
+				</div>
 				<figcaption>
 					<a th:href="@{/gallery/photos/{id}/file(id=${photo.id}, download=true)}">내려받기</a>
 				</figcaption>
 			</figure>
 		</div>
+
+		<!-- 사진 더 넣기 -->
+		<form th:if="${isAdmin}" class="add-photos" method="post" enctype="multipart/form-data"
+		      th:action="@{/admin/events/{id}/photos(id=${event.id})}" id="addPhotoForm">
+			<input type="hidden" name="back" th:value="${backUrl}">
+			<!-- display:none 인 입력은 브라우저에 따라 라벨 클릭이 먹지 않는다. 보이지만 않게 둔다. -->
+			<input type="file" id="morePhotos" name="photos" accept="image/*" multiple class="sr-only">
+
+			<label for="morePhotos" class="add-photos-pick" id="addPhotoPick"
+			       th:text="${event.photoCount == 0} ? '＋ 사진 넣기' : '＋ 사진 더 넣기'">＋ 사진 더 넣기</label>
+			<span class="add-photos-info" id="addPhotoInfo">고르면 바로 올라갑니다. 여러 장을 한 번에 고를 수 있어요.</span>
+			<!-- 자바스크립트가 막힌 환경에서도 보낼 수 있도록 남겨 둔다 -->
+			<noscript><button type="submit" class="tiny-save">넣기</button></noscript>
+		</form>
 	</section>
 
 	<a th:href="${backUrl}" class="back-link">← 목록으로 돌아가기</a>
@@ -168,6 +240,24 @@
 	document.addEventListener('keydown', function (e) {
 		if (e.key === 'Escape') closeAll();
 	});
+
+	// 사진을 고르면 곧바로 올린다. 따로 누를 단추가 없어야 헷갈리지 않는다.
+	var morePhotos = document.getElementById('morePhotos');
+	if (morePhotos) {
+		morePhotos.addEventListener('change', function () {
+			var count = morePhotos.files ? morePhotos.files.length : 0;
+			if (count === 0) return;
+
+			var info = document.getElementById('addPhotoInfo');
+			var pick = document.getElementById('addPhotoPick');
+
+			info.textContent = count + '장을 올리는 중입니다...';
+			pick.textContent = '올리는 중';
+			pick.style.pointerEvents = 'none';
+
+			document.getElementById('addPhotoForm').submit();
+		});
+	}
 })();
 </script>
 

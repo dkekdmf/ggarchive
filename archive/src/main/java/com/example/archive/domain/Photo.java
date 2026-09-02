@@ -64,7 +64,4 @@ public class Photo {
 		this.event = event;
 	}
 
-	public Senior getSenior() {
-		return event.getSenior();
-	}
 }
